@@ -117,7 +117,6 @@ const RegisterForm: React.FC = () => (
 );
 
 const styles: { [key: string]: React.CSSProperties } = {
-  // This is the main fix: we make the container a flexbox to center the form
   container: {
     display: "flex",
     alignItems: "center",
@@ -133,7 +132,7 @@ const styles: { [key: string]: React.CSSProperties } = {
   },
   tabButton: {
     flex: 1,
-    padding: "1rem",
+    padding: "1rem 0.5rem",
     border: "none",
     background: "transparent",
     color: "var(--text-secondary)",
@@ -151,6 +150,7 @@ const styles: { [key: string]: React.CSSProperties } = {
   formField: { marginBottom: "1.25rem" },
   formLabel: {
     display: "block",
+    textAlign: "left",
     fontSize: "0.875rem",
     color: "var(--text-secondary)",
     marginBottom: "0.5rem",
@@ -162,7 +162,7 @@ const styles: { [key: string]: React.CSSProperties } = {
     padding: "10px 12px",
     borderRadius: "6px",
     border: "1px solid var(--border-color)",
-    backgroundColor: "#fff",
+    backgroundColor: "var(--surface)",
     color: "var(--text-primary)",
     fontSize: "1rem",
   },
