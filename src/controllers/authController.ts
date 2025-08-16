@@ -1,38 +1,74 @@
 import { Request, Response } from "express";
 import bcrypt from "bcryptjs";
 import jwt from "jsonwebtoken";
-import User from "../models/User.js"; // Import the Mongoose User model
+import User, { UserRole } from "../models/User.js";
 import keys from "../config/keys.js";
 
 export const registerUser = async (req: Request, res: Response) => {
   try {
-    const { username, email, password } = req.body;
+    const {
+      email,
+      username,
+      password,
+      role,
+      firstName,
+      lastName,
+      dob,
+      middleName, // optional
+      bio, // optional
+      socialLinks, // optional
+      profilePictureUrl, // optional
+    } = req.body;
 
-    if (!username || !email || !password) {
-      return res
-        .status(400)
-        .json({ message: "Please provide all required fields." });
+    // --- Comprehensive Validation ---
+    if (
+      !email ||
+      !username ||
+      !password ||
+      !role ||
+      !firstName ||
+      !lastName ||
+      !dob
+    ) {
+      return res.status(400).json({
+        message:
+          "Please provide all required fields: email, username, password, role, firstName, lastName, and dob.",
+      });
+    }
+    if (!Object.values(UserRole).includes(role)) {
+      return res.status(400).json({
+        message: 'Invalid role specified. Must be "Performer" or "Audience".',
+      });
     }
 
-    // Check if user already exists in the database
-    const existingUser = await User.findOne({ email });
+    // --- Check for Existing User ---
+    const existingUser = await User.findOne({ $or: [{ email }, { username }] });
     if (existingUser) {
-      return res
-        .status(400)
-        .json({ message: "User with this email already exists." });
+      return res.status(400).json({
+        message: "A user with this email or username already exists.",
+      });
     }
 
+    // --- Hash Password ---
     const salt = await bcrypt.genSalt(10);
     const passwordHash = await bcrypt.hash(password, salt);
 
-    // Create a new user document
+    // --- Create New User Document ---
     const newUser = new User({
-      username,
       email,
+      username,
       passwordHash,
+      role,
+      firstName,
+      lastName,
+      middleName,
+      dob: new Date(dob), // Ensure DOB is stored as a Date object
+      profilePictureUrl,
+      bio: role === UserRole.Performer ? bio : undefined,
+      socialLinks: role === UserRole.Performer ? socialLinks : undefined,
     });
 
-    // Save the user to the database
+    // --- Save to Database ---
     await newUser.save();
 
     res.status(201).json({
@@ -41,6 +77,7 @@ export const registerUser = async (req: Request, res: Response) => {
         id: newUser._id,
         username: newUser.username,
         email: newUser.email,
+        role: newUser.role,
       },
     });
   } catch (error) {
@@ -49,38 +86,45 @@ export const registerUser = async (req: Request, res: Response) => {
   }
 };
 
+// The loginUser function remains unchanged
 export const loginUser = async (req: Request, res: Response) => {
   try {
-    const { email, password } = req.body;
+    const { loginIdentifier, password } = req.body; // Changed 'email' to 'loginIdentifier'
 
-    if (!email || !password) {
+    if (!loginIdentifier || !password) {
       return res
         .status(400)
-        .json({ message: "Please provide email and password." });
+        .json({ message: "Please provide a username/email and password." });
     }
 
-    // Find the user in the database by email
-    const user = await User.findOne({ email });
+    // --- Find the user by either email OR username ---
+    // The $or operator tells MongoDB to find a document that matches any of the conditions in the array.
+    const user = await User.findOne({
+      $or: [{ email: loginIdentifier }, { username: loginIdentifier }],
+    });
+
     if (!user) {
       return res.status(401).json({ message: "Invalid credentials." });
     }
 
-    // Compare the provided password with the stored hash
+    // --- Compare Passwords (no change here) ---
     const isMatch = await bcrypt.compare(password, user.passwordHash);
     if (!isMatch) {
       return res.status(401).json({ message: "Invalid credentials." });
     }
 
+    // --- Create and Send JWT (no change here) ---
     const payload = {
       id: user._id,
       username: user.username,
+      role: user.role,
     };
 
     const token = jwt.sign(payload, keys.jwtSecret, { expiresIn: "1h" });
 
     res.status(200).json({
       message: "Login successful!",
-      token: token,
+      token: `Bearer ${token}`,
     });
   } catch (error) {
     console.error("Login error:", error);
