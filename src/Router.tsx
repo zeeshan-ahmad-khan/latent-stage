@@ -1,22 +1,28 @@
 import { createBrowserRouter, RouterProvider } from "react-router-dom";
 import AuthPage from "./pages/AuthPage";
 import LobbyPage from "./pages/LobbyPage";
-import ProtectedRoute from "./components/ProtectedRoute"; // Import the new component
+import ProtectedRoute from "./components/ProtectedRoute";
+import PublicRoute from "./components/PublicRoute";
 
 const router = createBrowserRouter([
   {
-    path: "/login",
-    element: <AuthPage />,
+    // Routes for logged-out users
+    element: <PublicRoute />,
+    children: [
+      {
+        path: "/login",
+        element: <AuthPage />,
+      },
+    ],
   },
   {
-    // This is our protected route group
+    // Routes for logged-in users
     element: <ProtectedRoute />,
     children: [
       {
-        path: "/", // The lobby is now a child of the protected route
+        path: "/",
         element: <LobbyPage />,
       },
-      // You can add more protected routes here later
     ],
   },
 ]);

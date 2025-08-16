@@ -1,17 +1,15 @@
-// src/components/auth/AuthForm.tsx
-
 import React, { useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import * as Form from "@radix-ui/react-form";
 import * as RadioGroup from "@radix-ui/react-radio-group";
 import { useAuthStore } from "../../stores/authStore";
 import type { LoginCredentials, RegisterData, UserRole } from "../../types";
+import Spinner from "../Spinner"; // Import the new Spinner
 
-// The main AuthForm component does not need to change.
 const AuthForm: React.FC = () => {
   const [formType, setFormType] = useState<"login" | "register">("login");
-  // ... (rest of the component is the same)
-  const { isLoading, error } = useAuthStore();
+  const { error } = useAuthStore();
+
   const formVariants = {
     hidden: { opacity: 0, y: 10 },
     visible: { opacity: 1, y: 0 },
@@ -42,7 +40,9 @@ const AuthForm: React.FC = () => {
           </button>
         </div>
 
-        {error && <p style={{ color: "red", textAlign: "center" }}>{error}</p>}
+        {error && (
+          <p style={{ color: "#ef4444", textAlign: "center" }}>{error}</p>
+        )}
 
         <AnimatePresence mode="wait">
           <motion.div
@@ -56,17 +56,13 @@ const AuthForm: React.FC = () => {
             {formType === "login" ? <LoginForm /> : <RegisterForm />}
           </motion.div>
         </AnimatePresence>
-
-        {isLoading && <p style={{ textAlign: "center" }}>Loading...</p>}
       </div>
     </div>
   );
 };
 
-// The LoginForm component does not need to change.
 const LoginForm: React.FC = () => {
-  // ... (code for LoginForm is the same)
-  const login = useAuthStore((state) => state.login);
+  const { login, isLoading } = useAuthStore();
 
   const handleSubmit = (event: React.FormEvent<HTMLFormElement>) => {
     event.preventDefault();
@@ -96,15 +92,16 @@ const LoginForm: React.FC = () => {
         </Form.Control>
       </Form.Field>
       <Form.Submit asChild>
-        <button style={styles.submitButton}>Sign In</button>
+        <button style={styles.submitButton} disabled={isLoading}>
+          {isLoading ? <Spinner /> : "Sign In"}
+        </button>
       </Form.Submit>
     </Form.Root>
   );
 };
 
-// --- THIS IS THE CORRECTED COMPONENT ---
 const RegisterForm: React.FC = () => {
-  const register = useAuthStore((state) => state.register);
+  const { register, isLoading } = useAuthStore();
 
   const handleSubmit = (event: React.FormEvent<HTMLFormElement>) => {
     event.preventDefault();
@@ -172,9 +169,7 @@ const RegisterForm: React.FC = () => {
           style={styles.radioGroup}
         >
           <div style={styles.radioItem}>
-            {/* The RadioGroup.Item is the clickable circle */}
             <RadioGroup.Item value="Audience" id="r1" style={styles.radioRoot}>
-              {/* The Indicator is the dot that appears inside */}
               <RadioGroup.Indicator style={styles.radioIndicator} />
             </RadioGroup.Item>
             <label htmlFor="r1" style={styles.radioLabel}>
@@ -192,13 +187,14 @@ const RegisterForm: React.FC = () => {
         </RadioGroup.Root>
       </Form.Field>
       <Form.Submit asChild>
-        <button style={styles.submitButton}>Create Account</button>
+        <button style={styles.submitButton} disabled={isLoading}>
+          {isLoading ? <Spinner /> : "Create Account"}
+        </button>
       </Form.Submit>
     </Form.Root>
   );
 };
 
-// --- THESE ARE THE CORRECTED STYLES ---
 const styles: { [key: string]: React.CSSProperties } = {
   container: {
     display: "flex",
@@ -260,10 +256,13 @@ const styles: { [key: string]: React.CSSProperties } = {
     fontWeight: "500",
     cursor: "pointer",
     marginTop: "1.5rem",
+    display: "flex",
+    justifyContent: "center",
+    alignItems: "center",
+    minHeight: "44px",
   },
   radioGroup: { display: "flex", gap: "2rem", marginTop: "0.75rem" },
   radioItem: { display: "flex", alignItems: "center", gap: "0.5rem" },
-  // This is the outer circle, the clickable button
   radioRoot: {
     all: "unset",
     width: 18,
@@ -275,7 +274,6 @@ const styles: { [key: string]: React.CSSProperties } = {
     justifyContent: "center",
     cursor: "pointer",
   },
-  // This is the inner dot that appears when selected
   radioIndicator: {
     width: 10,
     height: 10,
