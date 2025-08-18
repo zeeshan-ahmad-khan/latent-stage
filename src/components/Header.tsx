@@ -2,14 +2,18 @@ import React from "react";
 import { useAuthStore } from "../stores/authStore";
 
 const Header: React.FC = () => {
-  const logout = useAuthStore((state) => state.logout);
+  const { logout, user } = useAuthStore();
 
   return (
     <header style={styles.header}>
       <div style={styles.logo}>The Latent Stage</div>
-      <button onClick={logout} style={styles.logoutButton}>
-        Logout
-      </button>
+      <div style={styles.userInfo}>
+        {/* Display the username if it exists */}
+        {user && <span>Welcome, {user.username}</span>}
+        <button onClick={logout} style={styles.logoutButton}>
+          Logout
+        </button>
+      </div>
     </header>
   );
 };
@@ -29,6 +33,11 @@ const styles: { [key: string]: React.CSSProperties } = {
     fontWeight: "bold",
     fontSize: "1.25rem",
     color: "var(--accent)",
+  },
+  userInfo: {
+    display: "flex",
+    alignItems: "center",
+    gap: "1rem",
   },
   logoutButton: {
     padding: "0.5rem 1rem",
