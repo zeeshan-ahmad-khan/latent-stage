@@ -4,6 +4,7 @@ import LobbyPage from "./pages/LobbyPage";
 import ProtectedRoute from "./components/ProtectedRoute";
 import PublicRoute from "./components/PublicRoute";
 import MainLayout from "./components/MainLayout";
+import PerformanceRoomPage from "./pages/PerformanceRoomPage";
 
 // Define the router structure statically, outside of any component.
 // This is the key to preventing the infinite loop.
@@ -30,7 +31,11 @@ const router = createBrowserRouter([
             path: "/",
             element: <LobbyPage />,
           },
-          // You can add more pages that need the header here
+          {
+            // Add the new route for the performance room
+            path: "/room/:roomId",
+            element: <PerformanceRoomPage />,
+          },
         ],
       },
     ],
