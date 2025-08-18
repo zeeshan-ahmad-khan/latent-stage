@@ -4,10 +4,7 @@ import AppRouter from "./Router";
 import { useAuthStore } from "./stores/authStore";
 
 function App() {
-  const { checkAuth, isAuthChecked } = useAuthStore((state) => ({
-    checkAuth: state.checkAuth,
-    isAuthChecked: state.isAuthChecked,
-  }));
+  const { checkAuth, isAuthChecked } = useAuthStore();
 
   useEffect(() => {
     checkAuth();
