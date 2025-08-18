@@ -1,4 +1,8 @@
-/* src/index.css */
+* {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
 
 :root {
   --background: #ffffff;
@@ -11,12 +15,11 @@
 
 html,
 body,
-#root,
 .App {
   height: 100%;
   margin: 0;
   padding: 0;
-  overflow: hidden; /* This prevents all scrollbars */
+  overflow: hidden; /* This is the key fix for the page scrollbar */
 }
 
 body {

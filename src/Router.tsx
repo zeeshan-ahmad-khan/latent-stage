@@ -3,6 +3,7 @@ import AuthPage from "./pages/AuthPage";
 import LobbyPage from "./pages/LobbyPage";
 import ProtectedRoute from "./components/ProtectedRoute";
 import PublicRoute from "./components/PublicRoute";
+import MainLayout from "./components/MainLayout";
 
 // Define the router structure statically, outside of any component.
 // This is the key to preventing the infinite loop.
@@ -22,8 +23,15 @@ const router = createBrowserRouter([
     element: <ProtectedRoute />,
     children: [
       {
-        path: "/",
-        element: <LobbyPage />,
+        // The MainLayout is now the parent element for this group
+        element: <MainLayout />,
+        children: [
+          {
+            path: "/",
+            element: <LobbyPage />,
+          },
+          // You can add more pages that need the header here
+        ],
       },
     ],
   },

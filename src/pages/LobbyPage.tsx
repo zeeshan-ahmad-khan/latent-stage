@@ -4,56 +4,49 @@ import ScheduleTimeline from "../components/ScheduleTimeline";
 import AdPlaceholder from "../components/AdPlaceholder";
 
 const LobbyPage: React.FC = () => {
-  // ✅ You can now change this value and the layout will work.
-  // Try "15vw" or "25vw".
-  const adWidth = "15vw";
-  const sidePadding = "2rem";
+  const adWidth = "22%";
 
   return (
-    <div>
-      {/* Left Ad (Fixed Position) */}
-      <div
-        style={{
-          position: "fixed",
-          left: sidePadding,
-          top: sidePadding,
-          bottom: sidePadding,
-          width: adWidth,
-        }}
-      >
+    <div style={styles.lobbyContainer}>
+      {/* Left Ad Column */}
+      <div style={{ width: adWidth }}>
         <AdPlaceholder />
       </div>
 
-      {/* Center Content (With Margin) */}
-      <div
-        style={{
-          // These margins create the space for the fixed ads
-          marginLeft: `calc(${adWidth} + ${sidePadding})`,
-          marginRight: `calc(${adWidth} + ${sidePadding})`,
-          display: "flex",
-          flexDirection: "column",
-          alignItems: "center",
-          padding: "2rem 0",
-        }}
-      >
+      {/* Center Content Column (Scrollable) */}
+      <div style={styles.centerColumn}>
         <MainStageCard />
         <ScheduleTimeline />
       </div>
 
-      {/* Right Ad (Fixed Position) */}
-      <div
-        style={{
-          position: "fixed",
-          right: sidePadding,
-          top: sidePadding,
-          bottom: sidePadding,
-          width: adWidth,
-        }}
-      >
+      {/* Right Ad Column */}
+      <div style={{ width: adWidth }}>
         <AdPlaceholder />
       </div>
     </div>
   );
+};
+
+const styles: { [key: string]: React.CSSProperties } = {
+  lobbyContainer: {
+    display: "flex",
+    width: "100%",
+    height: "100%",
+    padding: "2rem",
+    gap: "2rem",
+    boxSizing: "border-box",
+  },
+  sideColumn: {
+    height: "100%",
+  },
+  centerColumn: {
+    flex: 1, // Makes the center column take up the remaining space
+    height: "100%",
+    overflowY: "auto", // Allows ONLY this column to scroll
+    display: "flex",
+    flexDirection: "column",
+    alignItems: "center",
+  },
 };
 
 export default LobbyPage;
