@@ -4,9 +4,11 @@ import LobbyPage from "./pages/LobbyPage";
 import ProtectedRoute from "./components/ProtectedRoute";
 import PublicRoute from "./components/PublicRoute";
 
+// Define the router structure statically, outside of any component.
+// This is the key to preventing the infinite loop.
 const router = createBrowserRouter([
   {
-    // Routes for logged-out users
+    // Routes for logged-out users (like the login page)
     element: <PublicRoute />,
     children: [
       {
@@ -16,7 +18,7 @@ const router = createBrowserRouter([
     ],
   },
   {
-    // Routes for logged-in users
+    // Routes for logged-in users (like the lobby)
     element: <ProtectedRoute />,
     children: [
       {
@@ -27,6 +29,8 @@ const router = createBrowserRouter([
   },
 ]);
 
+// This component's only job is to provide the router to the app.
+// It will not re-render in a loop.
 const AppRouter = () => {
   return <RouterProvider router={router} />;
 };

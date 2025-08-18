@@ -1,12 +1,12 @@
 import { create } from "zustand";
 import { loginUser, registerUser } from "../services/authServices";
-import type { User, LoginCredentials, RegisterData } from "../types";
+import type { LoginCredentials, RegisterData } from "../types";
 
 interface AuthState {
   token: string | null;
   isAuthenticated: boolean;
   isLoading: boolean;
-  isAuthChecked: boolean; // New state to track initial check
+  isAuthChecked: boolean; // Tracks if we have checked localStorage yet
   error: string | null;
   login: (credentials: LoginCredentials) => Promise<void>;
   register: (userData: RegisterData) => Promise<void>;
@@ -22,25 +22,27 @@ export const useAuthStore = create<AuthState>((set, get) => ({
   error: null,
 
   login: async (credentials) => {
-    // ... (login logic remains the same)
     set({ isLoading: true, error: null });
     try {
       const data = await loginUser(credentials);
       const token = data.token.startsWith("Bearer ")
         ? data.token.split(" ")[1]
         : data.token;
+
+      // Save token to localStorage
       localStorage.setItem("authToken", token);
+
       set({ token, isAuthenticated: true, isLoading: false });
     } catch (err: any) {
       set({
         error: err.response?.data?.message || "Login failed",
         isLoading: false,
       });
+      throw err; // Re-throw error to handle it in the component if needed
     }
   },
 
   register: async (userData) => {
-    // ... (register logic remains the same)
     set({ isLoading: true, error: null });
     try {
       await registerUser(userData);
@@ -54,6 +56,7 @@ export const useAuthStore = create<AuthState>((set, get) => ({
         error: err.response?.data?.message || "Registration failed",
         isLoading: false,
       });
+      throw err;
     }
   },
 
@@ -66,11 +69,9 @@ export const useAuthStore = create<AuthState>((set, get) => ({
     try {
       const token = localStorage.getItem("authToken");
       if (token) {
-        // Here you would typically verify the token's expiry
         set({ token, isAuthenticated: true });
       }
     } finally {
-      // This will run whether a token was found or not
       set({ isAuthChecked: true });
     }
   },

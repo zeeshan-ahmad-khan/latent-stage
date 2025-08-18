@@ -9,13 +9,11 @@ function App() {
     isAuthChecked: state.isAuthChecked,
   }));
 
-  // This runs only once when the app starts
   useEffect(() => {
     checkAuth();
   }, [checkAuth]);
 
-  // While we check for a token, we show a simple loading screen.
-  // This prevents any routing logic from running until we know the user's status.
+  // Show a loading screen until the initial auth check is complete
   if (!isAuthChecked) {
     return (
       <div
