@@ -11,6 +11,7 @@ export default defineConfig({
         // The key 'chatMfe' must match the name in the chat-mfe's config
         // The value is the URL where the chat-mfe will be running
         chatMfe: "http://localhost:5001/assets/remoteEntry.js",
+        audioMfe: "http://localhost:5002/assets/remoteEntry.js",
       },
       shared: ["react", "react-dom"],
     }),

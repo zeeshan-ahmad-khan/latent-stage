@@ -1,16 +1,28 @@
 import React from "react";
 import { motion } from "framer-motion";
 import { useScheduleStore } from "../stores/scheduleStore";
+import { useNavigate } from "react-router-dom"; // Import the useNavigate hook
 
 const MainStageCard: React.FC = () => {
   const livePerformer = useScheduleStore((state) => state.livePerformer);
+  const navigate = useNavigate(); // Get the navigate function from the router
+
+  const handleJoinRoom = () => {
+    // We'll use a static room name for now
+    const roomName = "main-stage";
+    navigate(`/room/${roomName}`);
+  };
 
   return (
     <motion.div
-      style={styles.card}
       initial={{ opacity: 0, y: 20 }}
       animate={{ opacity: 1, y: 0 }}
       transition={{ duration: 0.5 }}
+      // Make the card clickable only if a performer is live
+      onClick={livePerformer ? handleJoinRoom : undefined}
+      // Add a pointer cursor to show it's clickable
+      whileHover={{ scale: livePerformer ? 1.03 : 1 }}
+      style={{ ...styles.card, cursor: livePerformer ? "pointer" : "default" }}
     >
       {livePerformer ? (
         <>
