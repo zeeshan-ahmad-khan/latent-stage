@@ -4,7 +4,7 @@ import federation from "@originjs/vite-plugin-federation";
 
 export default defineConfig({
   server: {
-    port: 5002, // We'll run this on a new port
+    port: 4002,
     cors: true,
   },
   plugins: [
@@ -24,5 +24,8 @@ export default defineConfig({
     target: "esnext",
     minify: false,
     cssCodeSplit: false,
+  },
+  preview: {
+    port: 5002,
   },
 });
