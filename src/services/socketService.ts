@@ -1,7 +1,7 @@
 // src/services/socketService.ts
 import { io, Socket } from "socket.io-client";
 
-const CHAT_SERVER_URL = "http://localhost:8080";
+const CHAT_SERVER_URL = import.meta.env.VITE_CHAT_SERVER_URL;
 let socket: Socket;
 
 export const connectWithToken = (token: string) => {

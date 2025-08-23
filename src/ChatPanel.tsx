@@ -1,15 +1,27 @@
-import React from "react";
-import ConnectionBar from "./components/ConnectionBar";
+import React, { useEffect } from "react";
 import MessageList from "./components/MessageList";
 import MessageInput from "./components/MessageInput";
+import { useChatStore } from "./stores/chatStore";
 
-// The ChatPanel will receive the auth token from the host app
-interface ChatPanelProps {
+export interface ChatPanelProps {
   token: string;
 }
 
 const ChatPanel: React.FC<ChatPanelProps> = ({ token }) => {
-  const roomName = "main-stage"; // We can make this dynamic later
+  const roomName = "main-stage";
+  const { initSocket, cleanup } = useChatStore();
+
+  useEffect(() => {
+    // When the component mounts, initialize the connection
+    if (token) {
+      initSocket(token, roomName);
+    }
+
+    // When the component unmounts (user leaves the page), clean up the connection
+    return () => {
+      cleanup();
+    };
+  }, [token, roomName, initSocket, cleanup]); // Dependencies for the effect
 
   return (
     <div
@@ -25,7 +37,6 @@ const ChatPanel: React.FC<ChatPanelProps> = ({ token }) => {
       }}
     >
       <h3 style={{ textAlign: "center", margin: "0 0 1rem 0" }}>Chat</h3>
-      <ConnectionBar token={token} roomName={roomName} />
       <MessageList />
       <MessageInput roomName={roomName} />
     </div>
