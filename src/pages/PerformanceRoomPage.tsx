@@ -1,10 +1,14 @@
 import React, { Suspense } from "react";
+import { useAuthStore } from "../stores/authStore"; // Import the auth store
 
 // Lazy load both micro-frontends
 const AudioPanel = React.lazy(() => import("audioMfe/AudioPanel"));
 const ChatPanel = React.lazy(() => import("chatMfe/ChatPanel"));
 
 const PerformanceRoomPage: React.FC = () => {
+  // Get the token from our global authentication store
+  const token = useAuthStore((state) => state.token);
+
   return (
     <div style={styles.pageContainer}>
       {/* Left Panel (Audio MFE) */}
@@ -17,8 +21,8 @@ const PerformanceRoomPage: React.FC = () => {
       {/* Right Panel (Chat MFE) */}
       <div style={styles.rightPanel}>
         <Suspense fallback={<div>Loading Chat...</div>}>
-          {/* We will integrate the real chat MFE here later */}
-          <ChatPanel />
+          {/* We pass the token down as a prop to the ChatPanel */}
+          {token ? <ChatPanel token={token} /> : <div>Authenticating...</div>}
         </Suspense>
       </div>
     </div>
@@ -28,7 +32,7 @@ const PerformanceRoomPage: React.FC = () => {
 const styles: { [key: string]: React.CSSProperties } = {
   pageContainer: {
     display: "grid",
-    gridTemplateColumns: "2fr 1fr", // Left panel is twice as wide as the right
+    gridTemplateColumns: "2fr 1fr",
     gap: "1.5rem",
     padding: "1.5rem",
     height: "100%",

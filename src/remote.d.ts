@@ -1,5 +1,5 @@
 declare module "chatMfe/ChatPanel" {
-  const ChatPanel: React.ComponentType;
+  const ChatPanel: React.ComponentType<{ token: string }>;
   export default ChatPanel;
 }
 
