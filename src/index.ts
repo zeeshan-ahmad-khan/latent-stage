@@ -3,6 +3,7 @@ import cors from "cors";
 import dotenv from "dotenv";
 import authRoutes from "./routes/auth.js";
 import userRoutes from "./routes/user.js";
+import livekitRoutes from "./routes/livekit.js";
 import mongoose from "mongoose";
 import keys from "./config/keys.js";
 
@@ -23,10 +24,11 @@ app.use(express.json());
 // API Routes
 app.use("/api/auth", authRoutes);
 app.use("/api/users", userRoutes);
+app.use("/api/livekit", livekitRoutes);
 
 // Health check route
 app.get("/", (req: Request, res: Response) => {
-  res.send("Authentication Server is running...");
+  res.send("Latent Stage Server is running...");
 });
 
 const startServer = async () => {
