@@ -3,8 +3,10 @@ dotenv.config();
 
 export const PORT = process.env.PORT ? parseInt(process.env.PORT, 10) : 8080;
 export const JWT_SECRET = process.env.JWT_SECRET;
+export const MONGO_URI = process.env.MONGO_URI;
 
-// This check ensures that JWT_SECRET is a string, satisfying TypeScript's type requirements.
-if (!JWT_SECRET) {
-  throw new Error("FATAL ERROR: JWT_SECRET is not defined in .env file.");
+if (!JWT_SECRET || !MONGO_URI) {
+  throw new Error(
+    "FATAL ERROR: JWT_SECRET and MONGO_URI are not defined in .env file."
+  );
 }
