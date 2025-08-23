@@ -1,22 +1,45 @@
-import React from "react";
+import React, { useState } from "react";
 import * as Form from "@radix-ui/react-form";
+import { useChatStore } from "../stores/chatStore";
 
-const MessageInput: React.FC = () => (
-  <Form.Root style={{ display: "flex", gap: "10px" }}>
-    <Form.Field name="message" style={{ flexGrow: 1 }}>
-      <Form.Control asChild>
-        <input
-          type="text"
-          placeholder="Type your message..."
-          style={styles.input}
-        />
-      </Form.Control>
-    </Form.Field>
-    <Form.Submit asChild>
-      <button style={styles.button}>Send</button>
-    </Form.Submit>
-  </Form.Root>
-);
+interface MessageInputProps {
+  roomName: string;
+}
+
+const MessageInput: React.FC<MessageInputProps> = ({ roomName }) => {
+  const { sendMessage, isConnected } = useChatStore();
+  const [message, setMessage] = useState("");
+
+  const handleSubmit = (event: React.FormEvent) => {
+    event.preventDefault();
+    if (message.trim()) {
+      sendMessage(roomName, message);
+      setMessage("");
+    }
+  };
+
+  return (
+    <Form.Root onSubmit={handleSubmit} style={{ display: "flex", gap: "10px" }}>
+      <Form.Field name="message" style={{ flexGrow: 1 }}>
+        <Form.Control asChild>
+          <input
+            type="text"
+            placeholder="Type your message..."
+            value={message}
+            onChange={(e) => setMessage(e.target.value)}
+            disabled={!isConnected}
+            style={styles.input}
+          />
+        </Form.Control>
+      </Form.Field>
+      <Form.Submit asChild>
+        <button style={styles.button} disabled={!isConnected}>
+          Send
+        </button>
+      </Form.Submit>
+    </Form.Root>
+  );
+};
 
 const styles: { [key: string]: React.CSSProperties } = {
   input: {

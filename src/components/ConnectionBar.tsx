@@ -1,45 +1,43 @@
 import React from "react";
-import * as Form from "@radix-ui/react-form";
+import { useChatStore } from "../stores/chatStore";
 
-const ConnectionBar: React.FC = () => (
-  <Form.Root
-    style={{
-      marginBottom: "1rem",
-      display: "flex",
-      gap: "10px",
-      alignItems: "center",
-    }}
-  >
-    <Form.Field name="jwt" style={{ flexGrow: 1 }}>
-      <Form.Control asChild>
-        <input
-          type="text"
-          placeholder="Paste JWT Token Here"
-          style={styles.input}
-        />
-      </Form.Control>
-    </Form.Field>
-    <button style={styles.button}>Connect</button>
-  </Form.Root>
-);
+interface ConnectionBarProps {
+  token: string;
+  roomName: string;
+}
 
-const styles: { [key: string]: React.CSSProperties } = {
-  input: {
-    width: "100%",
-    boxSizing: "border-box",
-    padding: "10px",
-    borderRadius: "6px",
-    border: "1px solid var(--border-color)",
-    backgroundColor: "var(--surface)",
-    color: "var(--text-primary)",
-  },
+const ConnectionBar: React.FC<ConnectionBarProps> = ({ token, roomName }) => {
+  const { connect, disconnect, isConnected } = useChatStore();
+
+  return (
+    <div style={{ marginBottom: "1rem", display: "flex", gap: "10px" }}>
+      <button
+        onClick={() => connect(token, roomName)}
+        disabled={isConnected}
+        style={styles.button}
+      >
+        Connect
+      </button>
+      <button
+        onClick={disconnect}
+        disabled={!isConnected}
+        style={styles.button}
+      >
+        Disconnect
+      </button>
+    </div>
+  );
+};
+
+const styles = {
   button: {
     padding: "10px 16px",
     borderRadius: "6px",
     border: "none",
-    backgroundColor: "var(--accent-green, #28a745)",
+    backgroundColor: "var(--accent)",
     color: "white",
     cursor: "pointer",
+    flex: 1,
   },
 };
 

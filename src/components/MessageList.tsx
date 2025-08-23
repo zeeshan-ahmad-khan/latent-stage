@@ -1,17 +1,20 @@
 import React from "react";
+import { useChatStore } from "../stores/chatStore";
 
-const MessageList: React.FC = () => (
-  <div style={styles.container}>
-    <div>
-      <strong style={{ color: "var(--accent)" }}>JaneSings:</strong> Hello
-      everyone!
+const MessageList: React.FC = () => {
+  const messages = useChatStore((state) => state.messages);
+
+  return (
+    <div style={styles.container}>
+      {messages.map((msg, index) => (
+        <div key={index} style={{ marginBottom: "8px" }}>
+          <strong style={{ color: "var(--accent)" }}>{msg.sender}:</strong>{" "}
+          {msg.message}
+        </div>
+      ))}
     </div>
-    <div>
-      <strong style={{ color: "var(--accent)" }}>JohnListens:</strong> This is
-      great!
-    </div>
-  </div>
-);
+  );
+};
 
 const styles: { [key: string]: React.CSSProperties } = {
   container: {
