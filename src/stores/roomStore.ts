@@ -3,9 +3,10 @@ import {
   Room,
   RoomEvent,
   RemoteParticipant,
-  LocalTrackPublication,
   Track,
   ParticipantEvent,
+  Participant,
+  TrackPublication,
 } from "livekit-client";
 import { fetchLiveKitToken } from "../services/livekitService";
 
@@ -16,11 +17,13 @@ interface RoomState {
   participants: RemoteParticipant[];
   error: string | null;
   canPlayAudio: boolean;
+  isMuted: boolean;
+  speakingParticipants: Participant[];
+  localParticipant: Participant | null;
   connect: (roomName: string, authToken: string) => Promise<void>;
   disconnect: () => void;
   startAudio: () => Promise<void>;
   resumeAudio: () => Promise<void>;
-  isMuted: boolean;
   toggleMute: () => Promise<void>;
 }
 
@@ -29,7 +32,9 @@ export const useRoomStore = create<RoomState>((set, get) => ({
   participants: [],
   error: null,
   canPlayAudio: true,
-  isMuted: false,
+  isMuted: true,
+  speakingParticipants: [],
+  localParticipant: null,
   connect: async (roomName, authToken) => {
     try {
       const livekitToken = await fetchLiveKitToken(roomName, authToken);
@@ -40,25 +45,28 @@ export const useRoomStore = create<RoomState>((set, get) => ({
         },
       });
 
-      set({ room });
+      set({ room, localParticipant: room.localParticipant });
 
-      const onLocalTrackChanged = (pub: LocalTrackPublication) => {
-        if (pub.kind === Track.Kind.Audio) {
-          set({ isMuted: pub.isMuted });
+      // ✅ --- THIS IS THE CHANGE ---
+      // These are the correct listeners for mute/unmute state changes.
+      const handleMuteChange = (publication: TrackPublication) => {
+        if (publication.kind === Track.Kind.Audio) {
+          set({ isMuted: publication.isMuted });
         }
       };
-      room.localParticipant.on(
-        ParticipantEvent.LocalTrackPublished,
-        onLocalTrackChanged
-      );
-      room.localParticipant.on(
-        ParticipantEvent.LocalTrackUnpublished,
-        onLocalTrackChanged
-      );
 
-      // This event handles both initial suspension and suspension after a reconnect
+      // We listen specifically for when a track is muted or unmuted.
+      room.localParticipant.on(ParticipantEvent.TrackMuted, handleMuteChange);
+      room.localParticipant.on(ParticipantEvent.TrackUnmuted, handleMuteChange);
+
+      // --- The incorrect listeners have been removed. ---
+
       room.on(RoomEvent.AudioPlaybackStatusChanged, () => {
         set({ canPlayAudio: room.canPlaybackAudio });
+      });
+
+      room.on(RoomEvent.ActiveSpeakersChanged, (speakers) => {
+        set({ speakingParticipants: speakers });
       });
 
       const onParticipantsChanged = () => {
@@ -71,7 +79,6 @@ export const useRoomStore = create<RoomState>((set, get) => ({
 
       await room.connect(LIVEKIT_HOST, livekitToken);
 
-      // Set the initial list of participants and audio status after connecting
       set({
         participants: Array.from(room.remoteParticipants.values()),
         canPlayAudio: room.canPlaybackAudio,
@@ -84,10 +91,15 @@ export const useRoomStore = create<RoomState>((set, get) => ({
   disconnect: () => {
     const room = get().room;
     if (room) {
-      room.removeAllListeners(); // Clean up all event listeners
+      room.removeAllListeners();
       room.disconnect();
     }
-    set({ room: null, participants: [] });
+    set({
+      room: null,
+      participants: [],
+      localParticipant: null,
+      speakingParticipants: [],
+    });
   },
 
   startAudio: async () => {
@@ -95,6 +107,10 @@ export const useRoomStore = create<RoomState>((set, get) => ({
     if (room) {
       try {
         await room.localParticipant.setMicrophoneEnabled(true);
+        const micPub = room.localParticipant.getTrackPublication(
+          Track.Source.Microphone
+        );
+        set({ isMuted: micPub?.isMuted ?? true });
       } catch (error) {
         console.error("Could not get microphone permissions:", error);
         set({
@@ -104,14 +120,21 @@ export const useRoomStore = create<RoomState>((set, get) => ({
       }
     }
   },
+
   toggleMute: async () => {
     const room = get().room;
-    if (room) {
-      const isMuted = get().isMuted;
-      await room.localParticipant.setMicrophoneEnabled(!isMuted);
-      set({ isMuted: !isMuted });
+    const micPub = room?.localParticipant.getTrackPublication(
+      Track.Source.Microphone
+    );
+    if (micPub) {
+      if (micPub.isMuted) {
+        await micPub.unmute();
+      } else {
+        await micPub.mute();
+      }
     }
   },
+
   resumeAudio: async () => {
     const room = get().room;
     if (room) {

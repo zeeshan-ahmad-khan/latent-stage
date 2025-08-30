@@ -1,4 +1,4 @@
-import React from "react";
+import React, { useState, useEffect } from "react";
 import { motion } from "framer-motion";
 import { useRoomStore } from "../stores/roomStore";
 import {
@@ -16,13 +16,35 @@ interface PerformerDisplayProps {
 }
 
 const PerformerDisplay: React.FC<PerformerDisplayProps> = ({ userRole }) => {
-  // We only get the state needed for the UI as requested
   const { isMuted, toggleMute, participants } = useRoomStore();
   const audienceCount = participants.length;
-
-  // Since only one performer speaks, we will assume for the UI
-  // that if the mic is unmuted, it is "speaking" for the glow effect.
   const isSpeaking = !isMuted;
+
+  // --- TIMER STATE AND LOGIC ---
+  const [timeLeft, setTimeLeft] = useState(15 * 60); // 15 minutes in seconds
+
+  useEffect(() => {
+    // Exit if the timer reaches zero
+    if (timeLeft <= 0) return;
+
+    // Set up the interval
+    const timerId = setInterval(() => {
+      setTimeLeft((prevTime) => prevTime - 1);
+    }, 1000);
+
+    // Clean up the interval when the component unmounts
+    return () => clearInterval(timerId);
+  }, [timeLeft]);
+
+  // Helper function to format seconds into MM:SS format
+  const formatTime = (seconds: number) => {
+    const minutes = Math.floor(seconds / 60);
+    const remainingSeconds = seconds % 60;
+    return `${minutes}:${remainingSeconds < 10 ? "0" : ""}${remainingSeconds}`;
+  };
+
+  const isWarningTime = timeLeft <= 120; // 2 minutes = 120 seconds
+  // --- END OF TIMER LOGIC ---
 
   const socialLinks = {
     youtube: "https://youtube.com/user/placeholder",
@@ -30,7 +52,6 @@ const PerformerDisplay: React.FC<PerformerDisplayProps> = ({ userRole }) => {
     facebook: "https://facebook.com/placeholder",
   };
 
-  // Simplified styles based on isMuted and isSpeaking
   const buttonBackgroundColor = isSpeaking
     ? "rgba(239, 68, 68, 0.2)"
     : "transparent";
@@ -84,7 +105,13 @@ const PerformerDisplay: React.FC<PerformerDisplayProps> = ({ userRole }) => {
         />
         <h2 style={styles.username}>@LiveSinger</h2>
         <p style={styles.talent}>Singer / Songwriter</p>
-        <div style={styles.timer}>15:00</div>
+
+        {/* --- UPDATED TIMER ELEMENT --- */}
+        <div
+          style={{ ...styles.timer, ...(isWarningTime && styles.timerWarning) }}
+        >
+          {formatTime(timeLeft)}
+        </div>
       </div>
 
       {userRole === "Performer" && (
@@ -99,9 +126,9 @@ const PerformerDisplay: React.FC<PerformerDisplayProps> = ({ userRole }) => {
           whileTap={{ scale: 0.95 }}
         >
           {isSpeaking ? (
-            <FaMicrophoneSlash size={32} color={iconColor} />
+            <FaMicrophone size={32} color={iconColor} />
           ) : (
-            <FaMicrophone size={32} color="#6c757d" />
+            <FaMicrophoneSlash size={32} color="#6c757d" />
           )}
         </motion.button>
       )}
@@ -172,12 +199,23 @@ const styles: { [key: string]: React.CSSProperties } = {
     margin: "0.25rem 0 0 0",
     color: "var(--text-secondary)",
   },
+  // --- NEW AND UPDATED TIMER STYLES ---
   timer: {
     marginTop: "1rem",
-    fontSize: "1.5rem",
+    fontSize: "3.5rem", // Made bigger
     fontWeight: "bold",
     color: "var(--text-primary)",
+    backgroundColor: "rgba(0, 0, 0, 0.03)", // Translucent background
+    border: "1px solid var(--border-color)", // Border
+    borderRadius: "12px",
+    padding: "0.5rem 1.5rem",
+    transition: "color 0.3s ease-in-out, border-color 0.3s ease-in-out",
   },
+  timerWarning: {
+    color: "#ef4444", // Red color for warning
+    borderColor: "rgba(239, 68, 68, 0.5)",
+  },
+  // --- END OF TIMER STYLES ---
   muteButton: {
     background: "none",
     border: "2px solid",
