@@ -3,7 +3,7 @@ import PerformerDisplay from "./components/PerformerDisplay";
 import EmojiBar from "./components/EmojiBar";
 import AudioTrack from "./components/AudioTrack";
 import { useRoomStore } from "./stores/roomStore";
-import type { UserRole } from "./types"; // Assuming you have a types file
+import type { UserRole } from "./types";
 
 export interface AudioPanelProps {
   token: string;
@@ -21,15 +21,11 @@ const AudioPanel: React.FC<AudioPanelProps> = ({ token, userRole }) => {
     resumeAudio,
   } = useRoomStore();
   const roomName = "main-stage";
-
-  // --- FIX FOR DOUBLE MOUNT ---
-  // We use a ref to track if the connection effect has already run.
   const hasConnected = useRef(false);
 
   useEffect(() => {
-    // Only run the connection logic once.
     if (token && !hasConnected.current) {
-      hasConnected.current = true; // Mark as run
+      hasConnected.current = true;
       connect(roomName, token).then(() => {
         if (userRole === "Performer") {
           startAudio();
@@ -37,9 +33,7 @@ const AudioPanel: React.FC<AudioPanelProps> = ({ token, userRole }) => {
       });
     }
 
-    // This cleanup function will run only on the final unmount.
     return () => {
-      // On cleanup, we should only disconnect if we successfully connected.
       if (hasConnected.current) {
         disconnect();
       }
@@ -52,36 +46,57 @@ const AudioPanel: React.FC<AudioPanelProps> = ({ token, userRole }) => {
 
   return (
     <div style={{ display: "flex", flexDirection: "column", height: "100%" }}>
-      {/* --- FIX FOR UNIQUE KEY --- */}
-      {/* We use the participant's unique 'sid' as the key */}
       {participants.map((p) => (
         <AudioTrack key={p.sid} participant={p} />
       ))}
 
-      <PerformerDisplay />
+      <div
+        onClick={!canPlayAudio ? resumeAudio : undefined}
+        style={{
+          position: "relative",
+          cursor: !canPlayAudio ? "pointer" : "default",
+          flex: 1,
+          display: "flex",
+        }}
+      >
+        <PerformerDisplay userRole={userRole} />
 
-      {!canPlayAudio && (
-        <button onClick={resumeAudio} style={styles.resumeButton}>
-          Click to Play Audio
-        </button>
-      )}
+        {!canPlayAudio && (
+          <div style={styles.playOverlay}>
+            <span style={styles.playIcon}>▶</span>
+            Click to Listen
+          </div>
+        )}
+      </div>
 
       <EmojiBar />
+
+      {/* The Controls component is no longer needed here */}
     </div>
   );
 };
 
 const styles = {
-  resumeButton: {
-    marginTop: "1rem",
-    padding: "1rem",
-    fontSize: "1rem",
-    fontWeight: "bold",
+  playOverlay: {
+    position: "absolute" as const,
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: 0,
+    backgroundColor: "rgba(0, 0, 0, 0.6)",
     color: "white",
-    backgroundColor: "var(--accent)",
-    border: "none",
-    borderRadius: "8px",
-    cursor: "pointer",
+    display: "flex",
+    flexDirection: "column" as const,
+    alignItems: "center",
+    justifyContent: "center",
+    borderRadius: "12px",
+    fontSize: "1.2rem",
+    fontWeight: "bold",
+    zIndex: 10,
+  },
+  playIcon: {
+    fontSize: "3rem",
+    marginBottom: "0.5rem",
   },
 };
 

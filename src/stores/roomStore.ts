@@ -9,12 +9,10 @@ import {
 } from "livekit-client";
 import { fetchLiveKitToken } from "../services/livekitService";
 
-// You can get this from your LiveKit Cloud project or self-hosted instance
 const LIVEKIT_HOST = import.meta.env.VITE_LIVEKIT_URL;
 
 interface RoomState {
   room: Room | null;
-  // The state will hold an array of participants
   participants: RemoteParticipant[];
   error: string | null;
   canPlayAudio: boolean;
@@ -31,7 +29,7 @@ export const useRoomStore = create<RoomState>((set, get) => ({
   participants: [],
   error: null,
   canPlayAudio: true,
-  isMuted: true,
+  isMuted: false,
   connect: async (roomName, authToken) => {
     try {
       const livekitToken = await fetchLiveKitToken(roomName, authToken);
@@ -58,6 +56,7 @@ export const useRoomStore = create<RoomState>((set, get) => ({
         onLocalTrackChanged
       );
 
+      // This event handles both initial suspension and suspension after a reconnect
       room.on(RoomEvent.AudioPlaybackStatusChanged, () => {
         set({ canPlayAudio: room.canPlaybackAudio });
       });
@@ -72,30 +71,43 @@ export const useRoomStore = create<RoomState>((set, get) => ({
 
       await room.connect(LIVEKIT_HOST, livekitToken);
 
-      // Set the initial list of participants after connecting
-      set({ participants: Array.from(room.remoteParticipants.values()) });
+      // Set the initial list of participants and audio status after connecting
+      set({
+        participants: Array.from(room.remoteParticipants.values()),
+        canPlayAudio: room.canPlaybackAudio,
+      });
     } catch (err: any) {
       set({ error: err.message || "Failed to connect to room" });
     }
   },
 
   disconnect: () => {
-    get().room?.disconnect();
+    const room = get().room;
+    if (room) {
+      room.removeAllListeners(); // Clean up all event listeners
+      room.disconnect();
+    }
     set({ room: null, participants: [] });
   },
 
   startAudio: async () => {
     const room = get().room;
     if (room) {
-      // This is the function that triggers the browser's microphone permission prompt.
-      await room.localParticipant.setMicrophoneEnabled(true);
+      try {
+        await room.localParticipant.setMicrophoneEnabled(true);
+      } catch (error) {
+        console.error("Could not get microphone permissions:", error);
+        set({
+          error:
+            "Microphone permission was denied. Please enable it in your browser settings.",
+        });
+      }
     }
   },
   toggleMute: async () => {
     const room = get().room;
     if (room) {
       const isMuted = get().isMuted;
-      // This function both enables/disables the mic and publishes/unpublishes the track
       await room.localParticipant.setMicrophoneEnabled(!isMuted);
       set({ isMuted: !isMuted });
     }
@@ -103,7 +115,6 @@ export const useRoomStore = create<RoomState>((set, get) => ({
   resumeAudio: async () => {
     const room = get().room;
     if (room) {
-      // This tells LiveKit to resume the audio context
       await room.startAudio();
       set({ canPlayAudio: true });
     }
