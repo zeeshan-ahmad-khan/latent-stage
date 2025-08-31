@@ -1,34 +1,59 @@
-import React, { Suspense } from "react";
-import { useAuthStore } from "../stores/authStore"; // Import the auth store
-import type { UserRole } from "../types";
+import React, { Suspense, useEffect } from "react";
+import { useAuthStore } from "../stores/authStore";
+import { useScheduleStore } from "../stores/scheduleStore"; // Import schedule store
+import { useNavigate } from "react-router-dom";
 
-// Lazy load both micro-frontends
 const AudioPanel = React.lazy(() => import("audioMfe/AudioPanel"));
 const ChatPanel = React.lazy(() => import("chatMfe/ChatPanel"));
 
 const PerformanceRoomPage: React.FC = () => {
-  // Get the token from our global authentication store
-  const { token, user } = useAuthStore();
+  const token = useAuthStore((state) => state.token);
+  const user = useAuthStore((state) => state.user);
+  const livePerformer = useScheduleStore((state) => state.livePerformer);
+  const fetchSchedule = useScheduleStore((state) => state.fetchSchedule);
+  const navigate = useNavigate();
+
+  // If the user lands here directly (e.g., refresh), fetch the schedule
+  useEffect(() => {
+    if (!livePerformer) {
+      fetchSchedule();
+    }
+  }, [livePerformer, fetchSchedule]);
+
+  // If there's no live performer after checking, redirect to lobby
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      if (!livePerformer) {
+        // navigate('/'); // Optional: redirect if no performer
+      }
+    }, 2000); // Give it a moment to fetch
+    return () => clearTimeout(timer);
+  }, [livePerformer, navigate]);
+
+  if (!user || !token) {
+    return <div>Authenticating...</div>;
+  }
+
+  // Show a loading state while we verify the live performer
+  if (!livePerformer) {
+    return <div>Loading Stage...</div>;
+  }
 
   return (
     <div style={styles.pageContainer}>
-      {/* Left Panel (Audio MFE) */}
       <div style={styles.leftPanel}>
         <Suspense fallback={<div>Loading Audio...</div>}>
-          {/* Pass the auth token down as a prop */}
-          {token ? (
-            <AudioPanel token={token} userRole={user?.role as UserRole} />
-          ) : (
-            <div>Authenticating...</div>
-          )}
+          <AudioPanel
+            token={token}
+            userRole={user.role}
+            // Pass the entire performer object to the MFE
+            performer={livePerformer.performer}
+          />
         </Suspense>
       </div>
-
-      {/* Right Panel (Chat MFE) */}
       <div style={styles.rightPanel}>
         <Suspense fallback={<div>Loading Chat...</div>}>
-          {/* We pass the token down as a prop to the ChatPanel */}
-          {token ? <ChatPanel token={token} /> : <div>Authenticating...</div>}
+          <ChatPanel token={token} />
         </Suspense>
       </div>
     </div>

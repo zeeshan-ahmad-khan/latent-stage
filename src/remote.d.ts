@@ -7,6 +7,18 @@ declare module "audioMfe/AudioPanel" {
   const AudioPanel: React.ComponentType<{
     token: string;
     userRole: "Performer" | "Audience";
+    performer?: {
+      _id: string;
+      username: string;
+      // Add the other performer fields we need
+      profilePictureUrl?: string;
+      bio?: string;
+      socialLinks?: {
+        youtube?: string;
+        instagram?: string;
+        facebook?: string;
+      };
+    };
   }>;
   export default AudioPanel;
 }
