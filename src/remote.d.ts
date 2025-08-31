@@ -4,6 +4,9 @@ declare module "chatMfe/ChatPanel" {
 }
 
 declare module "audioMfe/AudioPanel" {
-  const AudioPanel: React.ComponentType;
+  const AudioPanel: React.ComponentType<{
+    token: string;
+    userRole: "Performer" | "Audience";
+  }>;
   export default AudioPanel;
 }

@@ -1,10 +1,17 @@
-import React from "react";
+import React, { useEffect } from "react";
 import MainStageCard from "../components/MainStageCard";
 import ScheduleTimeline from "../components/ScheduleTimeline";
 import AdPlaceholder from "../components/AdPlaceholder";
+import { useScheduleStore } from "../stores/scheduleStore";
 
 const LobbyPage: React.FC = () => {
   const adWidth = "22%";
+  const fetchSchedule = useScheduleStore((state) => state.fetchSchedule); // 3. Get the fetch action
+
+  // 4. Use the useEffect hook to call fetchSchedule once when the component loads
+  useEffect(() => {
+    fetchSchedule();
+  }, [fetchSchedule]);
 
   return (
     <div style={styles.lobbyContainer}>

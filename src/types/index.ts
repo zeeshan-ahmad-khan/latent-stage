@@ -6,10 +6,14 @@ export interface User {
   role: UserRole;
 }
 
-// --- FIX IS HERE ---
-// Instead of an enum, we use a simple union of string types.
-// This provides the same type safety without causing the build error.
+// ✅ FIX: Use a string literal type for compile-time safety.
 export type UserRole = "Performer" | "Audience";
+
+// ✅ FIX: Create a constant object for runtime value checks.
+export const UserRoles = {
+  Performer: "Performer" as UserRole,
+  Audience: "Audience" as UserRole,
+};
 
 // This is the data required for the login API endpoint
 export interface LoginCredentials {

@@ -1,5 +1,6 @@
 import React, { Suspense } from "react";
 import { useAuthStore } from "../stores/authStore"; // Import the auth store
+import type { UserRole } from "../types";
 
 // Lazy load both micro-frontends
 const AudioPanel = React.lazy(() => import("audioMfe/AudioPanel"));
@@ -7,14 +8,19 @@ const ChatPanel = React.lazy(() => import("chatMfe/ChatPanel"));
 
 const PerformanceRoomPage: React.FC = () => {
   // Get the token from our global authentication store
-  const token = useAuthStore((state) => state.token);
+  const { token, user } = useAuthStore();
 
   return (
     <div style={styles.pageContainer}>
       {/* Left Panel (Audio MFE) */}
       <div style={styles.leftPanel}>
         <Suspense fallback={<div>Loading Audio...</div>}>
-          <AudioPanel />
+          {/* Pass the auth token down as a prop */}
+          {token ? (
+            <AudioPanel token={token} userRole={user?.role as UserRole} />
+          ) : (
+            <div>Authenticating...</div>
+          )}
         </Suspense>
       </div>
 

@@ -1,96 +1,279 @@
-import React from "react";
+import React, { useState } from "react";
 import { motion } from "framer-motion";
-import { useScheduleStore } from "../stores/scheduleStore";
+import { useScheduleStore, type Slot } from "../stores/scheduleStore";
+import { useAuthStore } from "../stores/authStore";
+import { UserRoles } from "../types";
+import Spinner from "./Spinner";
 
-const containerVariants = {
-  hidden: { opacity: 0 },
-  visible: {
-    opacity: 1,
-    transition: {
-      staggerChildren: 0.1,
-      delayChildren: 0.3,
-    },
-  },
+const CANCELLATION_WINDOW_HOURS = 1.25; // 1hr 15m
+const LAST_MINUTE_WINDOW_HOURS = 1.25; // 1hr 15m
+
+// ✅ FIX: Define a specific type for our tab keys
+type TabKey = "today" | "tomorrow" | "dayAfter";
+
+// Helper to format dates for display (e.g., "30 August 2025")
+const formatDate = (date: Date) => {
+  return date.toLocaleDateString("en-US", {
+    day: "numeric",
+    month: "long",
+    year: "numeric",
+  });
 };
 
-const itemVariants = {
-  hidden: { y: 20, opacity: 0 },
-  visible: { y: 0, opacity: 1 },
-};
+const today = new Date();
+const tomorrow = new Date();
+tomorrow.setDate(today.getDate() + 1);
+const dayAfter = new Date();
+dayAfter.setDate(today.getDate() + 2);
 
 const ScheduleTimeline: React.FC = () => {
-  const schedule = useScheduleStore((state) => state.schedule);
+  const [activeTab, setActiveTab] = useState<TabKey>("today");
+  const { todaySlots, tomorrowSlots, dayAfterTomorrowSlots, isLoading, error } =
+    useScheduleStore();
+  const user = useAuthStore((state) => state.user);
+
+  const tabs: Record<TabKey, { label: string; date: string; slots: Slot[] }> = {
+    today: { label: "Today", date: formatDate(today), slots: todaySlots },
+    tomorrow: {
+      label: "Tomorrow",
+      date: formatDate(tomorrow),
+      slots: tomorrowSlots,
+    },
+    dayAfter: {
+      label: "Day After Tomorrow",
+      date: formatDate(dayAfter),
+      slots: dayAfterTomorrowSlots,
+    },
+  };
+
+  const activeSlots = tabs[activeTab].slots;
+
+  return (
+    <div style={styles.timelineContainer}>
+      <div style={styles.tabsHeader}>
+        {/* ✅ FIX: Cast the array of keys to our specific TabKey type */}
+        {(Object.keys(tabs) as TabKey[]).map((key) => (
+          <button
+            key={key}
+            onClick={() => setActiveTab(key)}
+            style={{
+              ...styles.tabButton,
+              ...(activeTab === key ? styles.activeTab : {}),
+            }}
+          >
+            {/* This will now work without errors */}
+            {tabs[key].label}
+            <span style={styles.tabDate}>{tabs[key].date}</span>
+          </button>
+        ))}
+      </div>
+
+      <div style={styles.scrollableList}>
+        {isLoading && <Spinner />}
+        {error && <p style={{ color: "red" }}>{error}</p>}
+        {!isLoading &&
+          !error &&
+          activeSlots.map((slot) => (
+            <ScheduleItem key={slot._id} slot={slot} currentUser={user} />
+          ))}
+      </div>
+    </div>
+  );
+};
+
+// --- Individual Slot Item Component ---
+const ScheduleItem: React.FC<{ slot: Slot; currentUser: any }> = ({
+  slot,
+  currentUser,
+}) => {
+  const { bookSlot, cancelBooking } = useScheduleStore();
+  const [isBusy, setIsBusy] = useState(false);
+  const [actionError, setActionError] = useState<string | null>(null);
+
+  const handleBook = async () => {
+    setIsBusy(true);
+    setActionError(null);
+    try {
+      await bookSlot(slot._id);
+    } catch (err: any) {
+      setActionError(err.message);
+    } finally {
+      setIsBusy(false);
+    }
+  };
+
+  const handleCancel = async () => {
+    setIsBusy(true);
+    setActionError(null);
+    try {
+      await cancelBooking(slot._id);
+    } catch (err: any) {
+      setActionError(err.message);
+    } finally {
+      setIsBusy(false);
+    }
+  };
+
+  const time = new Date(slot.startTime).toLocaleTimeString("en-US", {
+    hour: "2-digit",
+    minute: "2-digit",
+  });
+
+  const isPerformer = currentUser?.role === UserRoles.Performer;
+  const isMyBooking = slot.performer?._id === currentUser?._id;
+  const now = new Date();
+  const timeToSlotHours =
+    (new Date(slot.startTime).getTime() - now.getTime()) / (1000 * 60 * 60);
+  const canCancel = timeToSlotHours > CANCELLATION_WINDOW_HOURS;
+  const isToday =
+    new Date(slot.startTime).toDateString() === now.toDateString();
+  const isLastMinute = timeToSlotHours <= LAST_MINUTE_WINDOW_HOURS;
+  const canBookToday = isToday && isLastMinute;
+  const canBookFuture = !isToday;
 
   return (
     <motion.div
-      style={styles.timelineContainer}
-      variants={containerVariants}
-      initial="hidden"
-      animate="visible"
+      style={styles.scheduleItem}
+      initial={{ opacity: 0 }}
+      animate={{ opacity: 1 }}
     >
-      <h3 style={styles.title}>Tonight's Schedule</h3>
-
-      {/* This new div is the scrollable container for the list */}
-      <div style={styles.scrollableList}>
-        {schedule.map((slot, index) => (
-          <ScheduleItem
-            key={index}
-            time={slot.time}
-            performer={slot.performer?.username || ""}
-            status={slot.status}
-          />
-        ))}
+      <div style={styles.slotInfo}>
+        <span style={styles.time}>{time}</span>
+        {slot.status === "booked" ? (
+          <span style={styles.booked}>
+            {slot.performer?.username || "Booked"}
+          </span>
+        ) : (
+          <span style={styles.available}>[ Available ]</span>
+        )}
       </div>
+
+      {isPerformer && (
+        <div style={styles.actionContainer}>
+          {slot.status === "available" && (canBookToday || canBookFuture) && (
+            <button
+              onClick={handleBook}
+              style={styles.bookButton}
+              disabled={isBusy}
+            >
+              {isBusy ? <Spinner /> : "Book"}
+            </button>
+          )}
+          {isMyBooking && (
+            <button
+              onClick={handleCancel}
+              style={styles.cancelButton}
+              disabled={isBusy || !canCancel}
+            >
+              {isBusy ? <Spinner /> : "Cancel"}
+            </button>
+          )}
+        </div>
+      )}
+      {actionError && <p style={styles.actionError}>{actionError}</p>}
     </motion.div>
   );
 };
 
-const ScheduleItem: React.FC<{
-  time: string;
-  performer: string;
-  status: string;
-}> = ({ time, performer, status }) => (
-  <motion.div style={styles.scheduleItem} variants={itemVariants}>
-    <span>{time}</span>
-    <span style={status === "booked" ? styles.booked : styles.available}>
-      {status === "booked" ? performer : "[ Available Slot ]"}
-    </span>
-  </motion.div>
-);
-
+// --- STYLES ---
 const styles: { [key: string]: React.CSSProperties } = {
-  // This is the main container for the whole component
   timelineContainer: {
     width: "100%",
-    maxWidth: "500px",
+    maxWidth: "600px",
     marginTop: "2rem",
-    display: "flex", // Use flexbox for layout
+    display: "flex",
     flexDirection: "column",
-    // This is important: it makes sure the component doesn't grow taller than the available space
     flex: 1,
     overflow: "hidden",
+    backgroundColor: "var(--surface)",
+    borderRadius: "12px",
+    border: "1px solid var(--border-color)",
   },
-  title: {
-    textAlign: "center",
-    flexShrink: 0, // Prevents the title from shrinking
+  tabsHeader: {
+    display: "flex",
+    flexShrink: 0,
+    borderBottom: "1px solid var(--border-color)",
   },
-  // This container will hold and scroll the list items
+  tabButton: {
+    flex: 1,
+    padding: "1rem 0.5rem",
+    border: "none",
+    background: "transparent",
+    color: "var(--text-secondary)",
+    fontSize: "1rem",
+    cursor: "pointer",
+    borderBottom: "2px solid transparent",
+    display: "flex",
+    flexDirection: "column",
+    alignItems: "center",
+    gap: "0.25rem",
+  },
+  activeTab: {
+    color: "var(--accent)",
+    borderBottom: "2px solid var(--accent)",
+    fontWeight: 600,
+  },
+  tabDate: {
+    fontSize: "0.8rem",
+    fontWeight: 400,
+  },
   scrollableList: {
-    flex: 1, // Allows this div to grow and fill the remaining space
-    overflowY: "auto", // Adds a scrollbar ONLY if the content overflows
-    paddingRight: "1rem", // Prevents scrollbar from overlapping content
+    flex: 1,
+    overflowY: "auto",
+    padding: "1rem",
   },
   scheduleItem: {
     display: "flex",
     justifyContent: "space-between",
-    padding: "0.75rem 0",
+    alignItems: "center",
+    padding: "1rem 0.5rem",
     borderBottom: "1px solid var(--border-color)",
+    flexWrap: "wrap",
+  },
+  slotInfo: {
+    display: "flex",
+    alignItems: "center",
+    gap: "1.5rem",
+  },
+  time: {
+    fontWeight: 600,
+    minWidth: "70px",
   },
   booked: {
     color: "var(--accent-blue)",
+    fontWeight: 500,
   },
   available: {
     color: "var(--accent-green)",
+    fontStyle: "italic",
+  },
+  actionContainer: {
+    marginLeft: "auto",
+  },
+  bookButton: {
+    padding: "0.5rem 1rem",
+    border: "1px solid var(--accent-green)",
+    borderRadius: "6px",
+    backgroundColor: "rgba(16, 185, 129, 0.1)",
+    color: "var(--accent-green)",
+    fontWeight: 600,
+    cursor: "pointer",
+  },
+  cancelButton: {
+    padding: "0.5rem 1rem",
+    border: "1px solid #ef4444",
+    borderRadius: "6px",
+    backgroundColor: "rgba(239, 68, 68, 0.1)",
+    color: "#ef4444",
+    fontWeight: 600,
+    cursor: "pointer",
+  },
+  actionError: {
+    color: "#ef4444",
+    width: "100%",
+    textAlign: "right",
+    fontSize: "0.8rem",
+    marginTop: "0.5rem",
   },
 };
 
