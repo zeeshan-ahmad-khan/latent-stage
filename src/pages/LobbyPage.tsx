@@ -6,17 +6,17 @@ import { useScheduleStore } from "../stores/scheduleStore";
 
 const LobbyPage: React.FC = () => {
   const adWidth = "22%";
-  const { fetchSchedule, updateLiveStatus } = useScheduleStore(); // 3. Get the fetch action
+  const { fetchSchedule, updateLiveStatus } = useScheduleStore();
 
-  // 4. Use the useEffect hook to call fetchSchedule once when the component loads
   useEffect(() => {
     fetchSchedule();
     const intervalId = setInterval(() => {
       updateLiveStatus();
+      console.log("30 seconds passed - Live status updated");
     }, 30000);
 
     return () => clearInterval(intervalId);
-  }, [fetchSchedule]);
+  }, [fetchSchedule, updateLiveStatus]);
 
   return (
     <div style={styles.lobbyContainer}>

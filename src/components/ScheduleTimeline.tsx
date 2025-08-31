@@ -5,13 +5,9 @@ import { useAuthStore } from "../stores/authStore";
 import { UserRoles } from "../types";
 import Spinner from "./Spinner";
 
-const CANCELLATION_WINDOW_HOURS = 1.25; // 1hr 15m
-const LAST_MINUTE_WINDOW_HOURS = 1.25; // 1hr 15m
+const CANCELLATION_WINDOW_HOURS = 1.25;
+const LAST_MINUTE_WINDOW_HOURS = 1.25;
 
-// ✅ FIX: Define a specific type for our tab keys
-type TabKey = "today" | "tomorrow" | "dayAfter";
-
-// Helper to format dates for display (e.g., "30 August 2025")
 const formatDate = (date: Date) => {
   return date.toLocaleDateString("en-US", {
     day: "numeric",
@@ -26,13 +22,15 @@ tomorrow.setDate(today.getDate() + 1);
 const dayAfter = new Date();
 dayAfter.setDate(today.getDate() + 2);
 
+type TabKey = "today" | "tomorrow" | "dayAfter";
+
 const ScheduleTimeline: React.FC = () => {
   const [activeTab, setActiveTab] = useState<TabKey>("today");
   const { todaySlots, tomorrowSlots, dayAfterTomorrowSlots, isLoading, error } =
     useScheduleStore();
   const user = useAuthStore((state) => state.user);
 
-  const tabs: Record<TabKey, { label: string; date: string; slots: Slot[] }> = {
+  const tabs = {
     today: { label: "Today", date: formatDate(today), slots: todaySlots },
     tomorrow: {
       label: "Tomorrow",
@@ -51,7 +49,6 @@ const ScheduleTimeline: React.FC = () => {
   return (
     <div style={styles.timelineContainer}>
       <div style={styles.tabsHeader}>
-        {/* ✅ FIX: Cast the array of keys to our specific TabKey type */}
         {(Object.keys(tabs) as TabKey[]).map((key) => (
           <button
             key={key}
@@ -61,7 +58,6 @@ const ScheduleTimeline: React.FC = () => {
               ...(activeTab === key ? styles.activeTab : {}),
             }}
           >
-            {/* This will now work without errors */}
             {tabs[key].label}
             <span style={styles.tabDate}>{tabs[key].date}</span>
           </button>
@@ -81,7 +77,6 @@ const ScheduleTimeline: React.FC = () => {
   );
 };
 
-// --- Individual Slot Item Component ---
 const ScheduleItem: React.FC<{ slot: Slot; currentUser: any }> = ({
   slot,
   currentUser,
@@ -121,19 +116,25 @@ const ScheduleItem: React.FC<{ slot: Slot; currentUser: any }> = ({
 
   const isPerformer = currentUser?.role === UserRoles.Performer;
   const isMyBooking = slot.performer?._id === currentUser?._id;
+
   const now = new Date();
+  const slotStartTime = new Date(slot.startTime);
+  const slotEndTime = new Date(slotStartTime.getTime() + 15 * 60 * 1000);
+  const hasEnded = slotEndTime < now;
+
   const timeToSlotHours =
-    (new Date(slot.startTime).getTime() - now.getTime()) / (1000 * 60 * 60);
+    (slotStartTime.getTime() - now.getTime()) / (1000 * 60 * 60);
+
   const canCancel = timeToSlotHours > CANCELLATION_WINDOW_HOURS;
-  const isToday =
-    new Date(slot.startTime).toDateString() === now.toDateString();
+  const isToday = slotStartTime.toDateString() === now.toDateString();
   const isLastMinute = timeToSlotHours <= LAST_MINUTE_WINDOW_HOURS;
+
   const canBookToday = isToday && isLastMinute;
   const canBookFuture = !isToday;
 
   return (
     <motion.div
-      style={styles.scheduleItem}
+      style={{ ...styles.scheduleItem, opacity: hasEnded ? 0.6 : 1 }}
       initial={{ opacity: 0 }}
       animate={{ opacity: 1 }}
     >
@@ -144,32 +145,41 @@ const ScheduleItem: React.FC<{ slot: Slot; currentUser: any }> = ({
             {slot.performer?.username || "Booked"}
           </span>
         ) : (
-          <span style={styles.available}>[ Available ]</span>
+          <span style={hasEnded ? styles.unavailable : styles.available}>
+            {hasEnded ? "[ Unavailable ]" : "[ Available ]"}
+          </span>
         )}
       </div>
 
-      {isPerformer && (
-        <div style={styles.actionContainer}>
-          {slot.status === "available" && (canBookToday || canBookFuture) && (
-            <button
-              onClick={handleBook}
-              style={styles.bookButton}
-              disabled={isBusy}
-            >
-              {isBusy ? <Spinner /> : "Book"}
-            </button>
-          )}
-          {isMyBooking && (
-            <button
-              onClick={handleCancel}
-              style={styles.cancelButton}
-              disabled={isBusy || !canCancel}
-            >
-              {isBusy ? <Spinner /> : "Cancel"}
-            </button>
-          )}
-        </div>
-      )}
+      <div style={styles.actionContainer}>
+        {/* --- Logic for what to display on the right side --- */}
+        {hasEnded && slot.status === "booked" && (
+          <span style={styles.ended}>Ended</span>
+        )}
+
+        {isPerformer && !hasEnded && (
+          <>
+            {slot.status === "available" && (canBookToday || canBookFuture) && (
+              <button
+                onClick={handleBook}
+                style={styles.bookButton}
+                disabled={isBusy}
+              >
+                {isBusy ? <Spinner /> : "Book"}
+              </button>
+            )}
+            {isMyBooking && (
+              <button
+                onClick={handleCancel}
+                style={styles.cancelButton}
+                disabled={isBusy || !canCancel}
+              >
+                {isBusy ? <Spinner /> : "Cancel"}
+              </button>
+            )}
+          </>
+        )}
+      </div>
       {actionError && <p style={styles.actionError}>{actionError}</p>}
     </motion.div>
   );
@@ -240,11 +250,15 @@ const styles: { [key: string]: React.CSSProperties } = {
     minWidth: "70px",
   },
   booked: {
-    color: "var(--accent-blue)",
+    color: "#4f46e5",
     fontWeight: 500,
   },
   available: {
-    color: "var(--accent-green)",
+    color: "#10b981",
+    fontStyle: "italic",
+  },
+  unavailable: {
+    color: "var(--text-secondary)",
     fontStyle: "italic",
   },
   actionContainer: {
@@ -252,10 +266,10 @@ const styles: { [key: string]: React.CSSProperties } = {
   },
   bookButton: {
     padding: "0.5rem 1rem",
-    border: "1px solid var(--accent-green)",
+    border: "1px solid #10b981",
     borderRadius: "6px",
     backgroundColor: "rgba(16, 185, 129, 0.1)",
-    color: "var(--accent-green)",
+    color: "#10b981",
     fontWeight: 600,
     cursor: "pointer",
   },
@@ -267,6 +281,11 @@ const styles: { [key: string]: React.CSSProperties } = {
     color: "#ef4444",
     fontWeight: 600,
     cursor: "pointer",
+  },
+  ended: {
+    color: "var(--text-primary)",
+    fontWeight: 600,
+    padding: "0.5rem 1rem",
   },
   actionError: {
     color: "#ef4444",

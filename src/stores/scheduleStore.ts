@@ -177,6 +177,10 @@ export const useScheduleStore = create<ScheduleState>((set, get) => ({
 
   updateLiveStatus: () => {
     const allSlots = get().allSlots;
+    // ✅ FIX: Add a guard clause. If the initial data hasn't loaded, do nothing.
+    if (allSlots.length === 0) {
+      return;
+    }
     const processedData = processSlots(allSlots);
     set(processedData);
   },
