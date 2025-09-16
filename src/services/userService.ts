@@ -5,7 +5,8 @@ export const getUserProfile = async () => {
   return response.data;
 };
 
-export const getUserBookings = async () => {
-  const response = await api.get("/users/bookings");
+export const getUserBookings = async (page = 1) => {
+  // Pass the page number as a query parameter
+  const response = await api.get(`/users/bookings?page=${page}`);
   return response.data;
 };

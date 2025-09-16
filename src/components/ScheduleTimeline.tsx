@@ -4,9 +4,7 @@ import { useScheduleStore, type Slot } from "../stores/scheduleStore";
 import { useAuthStore } from "../stores/authStore";
 import { UserRoles } from "../types";
 import Spinner from "./Spinner";
-
-const CANCELLATION_WINDOW_HOURS = 1.25;
-const LAST_MINUTE_WINDOW_HOURS = 1.25;
+import { useSettingsStore } from "../stores/settingsStore";
 
 const formatDate = (date: Date) => {
   return date.toLocaleDateString("en-US", {
@@ -84,6 +82,9 @@ const ScheduleItem: React.FC<{ slot: Slot; currentUser: any }> = ({
   const { bookSlot, cancelBooking } = useScheduleStore();
   const [isBusy, setIsBusy] = useState(false);
   const [actionError, setActionError] = useState<string | null>(null);
+  const settings = useSettingsStore((state) => state.settings);
+  const CANCELLATION_WINDOW_HOURS = settings?.CANCELLATION_WINDOW_HOURS ?? 1.25;
+  const LAST_MINUTE_WINDOW_HOURS = settings?.LAST_MINUTE_WINDOW_HOURS ?? 1.25;
 
   const handleBook = async () => {
     setIsBusy(true);

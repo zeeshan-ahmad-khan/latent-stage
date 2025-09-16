@@ -1,46 +1,75 @@
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useState, useRef, useCallback } from "react";
 import { motion } from "framer-motion";
 import { useScheduleStore, type Slot } from "../stores/scheduleStore";
 import { getUserBookings } from "../services/userService";
 import Spinner from "../components/Spinner";
-
-const CANCELLATION_WINDOW_HOURS = 1.25;
+import { useSettingsStore } from "../stores/settingsStore";
 
 const BookingsPage: React.FC = () => {
-  const [bookings, setBookings] = useState<Slot[]>([]);
+  const [upcomingBookings, setUpcomingBookings] = useState<Slot[]>([]);
+  const [pastBookings, setPastBookings] = useState<Slot[]>([]);
+  const [page, setPage] = useState(1);
+  const [hasMore, setHasMore] = useState(true);
   const [isLoading, setIsLoading] = useState(true);
+  const [isFetchingMore, setIsFetchingMore] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const { cancelBooking, fetchSchedule } = useScheduleStore();
 
-  const fetchBookings = async () => {
+  const observer = useRef<IntersectionObserver>(null);
+  const lastBookingElementRef = useCallback(
+    (node: HTMLDivElement) => {
+      if (isFetchingMore) return;
+      if (observer.current) observer.current.disconnect();
+      observer.current = new IntersectionObserver((entries) => {
+        if (entries[0].isIntersecting && hasMore) {
+          setPage((prevPage) => prevPage + 1);
+        }
+      });
+      if (node) observer.current.observe(node);
+    },
+    [isFetchingMore, hasMore]
+  );
+
+  const fetchBookings = async (currentPage: number) => {
+    // Differentiate between initial load and subsequent fetches
+    if (currentPage === 1) setIsLoading(true);
+    else setIsFetchingMore(true);
+
     try {
-      setIsLoading(true);
-      const data = await getUserBookings();
-      setBookings(data);
+      const data = await getUserBookings(currentPage);
+      if (currentPage === 1) {
+        setUpcomingBookings(data.upcomingBookings);
+        setPastBookings(data.pastBookings.bookings);
+      } else {
+        // Append new past bookings to the existing list
+        setPastBookings((prev) => [...prev, ...data.pastBookings.bookings]);
+      }
+      setHasMore(data.pastBookings.currentPage < data.pastBookings.totalPages);
     } catch (err: any) {
       setError(err.message || "Failed to fetch bookings.");
     } finally {
       setIsLoading(false);
+      setIsFetchingMore(false);
     }
   };
 
   useEffect(() => {
-    fetchBookings();
-  }, []);
+    fetchBookings(page);
+  }, [page]);
 
   const handleCancel = async (slotId: string) => {
     try {
       await cancelBooking(slotId);
-      await fetchBookings(); // Re-fetch bookings after cancellation
-      await fetchSchedule(); // Also re-fetch the main schedule
+      // Reset and refetch all data after a cancellation
+      setPage(1);
+      setPastBookings([]);
+      setUpcomingBookings([]);
+      await fetchBookings(1);
+      await fetchSchedule();
     } catch (err: any) {
       alert(`Error: ${err.message}`);
     }
   };
-
-  const now = new Date();
-  const upcomingBookings = bookings.filter((b) => new Date(b.startTime) >= now);
-  const pastBookings = bookings.filter((b) => new Date(b.startTime) < now);
 
   if (isLoading) {
     return (
@@ -57,7 +86,6 @@ const BookingsPage: React.FC = () => {
   return (
     <div style={styles.container}>
       <h1 style={styles.header}>My Bookings</h1>
-
       <section>
         <h2 style={styles.sectionHeader}>Upcoming</h2>
         {upcomingBookings.length > 0 ? (
@@ -76,21 +104,37 @@ const BookingsPage: React.FC = () => {
       <section>
         <h2 style={styles.sectionHeader}>Past</h2>
         {pastBookings.length > 0 ? (
-          pastBookings.map((booking) => (
-            <BookingItem key={booking._id} booking={booking} />
-          ))
+          pastBookings.map((booking, index) => {
+            // Add a ref to the last element to trigger loading more
+            if (pastBookings.length === index + 1) {
+              return (
+                <div ref={lastBookingElementRef} key={booking._id}>
+                  <BookingItem booking={booking} />
+                </div>
+              );
+            }
+            return <BookingItem key={booking._id} booking={booking} />;
+          })
         ) : (
           <p>No past performances.</p>
+        )}
+        {isFetchingMore && (
+          <div style={styles.centered}>
+            <Spinner />
+          </div>
         )}
       </section>
     </div>
   );
 };
 
+// The BookingItem component remains the same as before
 const BookingItem: React.FC<{
   booking: Slot;
   onCancel?: (slotId: string) => void;
 }> = ({ booking, onCancel }) => {
+  const settings = useSettingsStore((state) => state.settings);
+  const CANCELLATION_WINDOW_HOURS = settings?.CANCELLATION_WINDOW_HOURS ?? 1.25;
   const startTime = new Date(booking.startTime);
   const isPast = startTime < new Date();
 
@@ -132,7 +176,6 @@ const BookingItem: React.FC<{
   );
 };
 
-// --- STYLES ---
 const styles: { [key: string]: React.CSSProperties } = {
   container: {
     padding: "2rem",
@@ -176,7 +219,7 @@ const styles: { [key: string]: React.CSSProperties } = {
     display: "flex",
     justifyContent: "center",
     alignItems: "center",
-    height: "50vh",
+    height: "10vh",
   },
 };
 
