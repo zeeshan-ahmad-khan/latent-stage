@@ -6,32 +6,32 @@ import { useScheduleStore } from "../stores/scheduleStore";
 
 const LobbyPage: React.FC = () => {
   const adWidth = "22%";
-  const { fetchSchedule, updateLiveStatus } = useScheduleStore();
+  // ✅ FIX: We only need `fetchSchedule` from the store now.
+  const fetchSchedule = useScheduleStore((state) => state.fetchSchedule);
 
   useEffect(() => {
+    // 1. Fetch the initial schedule immediately when the page loads.
     fetchSchedule();
-    const intervalId = setInterval(() => {
-      updateLiveStatus();
-      console.log("30 seconds passed - Live status updated");
-    }, 30000);
 
+    // 2. Set up an interval to re-fetch the schedule every 30 seconds.
+    // This is the polling mechanism.
+    const intervalId = setInterval(() => {
+      fetchSchedule();
+    }, 30 * 1000); // 30 seconds
+
+    // 3. Clean up the interval when the user leaves the page to prevent memory leaks.
     return () => clearInterval(intervalId);
-  }, [fetchSchedule, updateLiveStatus]);
+  }, [fetchSchedule]);
 
   return (
     <div style={styles.lobbyContainer}>
-      {/* Left Ad Column */}
       <div style={{ width: adWidth }}>
         <AdPlaceholder />
       </div>
-
-      {/* Center Content Column (Scrollable) */}
       <div style={styles.centerColumn}>
         <MainStageCard />
         <ScheduleTimeline />
       </div>
-
-      {/* Right Ad Column */}
       <div style={{ width: adWidth }}>
         <AdPlaceholder />
       </div>
@@ -48,13 +48,10 @@ const styles: { [key: string]: React.CSSProperties } = {
     gap: "2rem",
     boxSizing: "border-box",
   },
-  sideColumn: {
-    height: "100%",
-  },
   centerColumn: {
-    flex: 1, // Makes the center column take up the remaining space
+    flex: 1,
     height: "100%",
-    overflowY: "auto", // Allows ONLY this column to scroll
+    overflowY: "auto",
     display: "flex",
     flexDirection: "column",
     alignItems: "center",

@@ -140,6 +140,7 @@ const ScheduleItem: React.FC<{ slot: Slot; currentUser: any }> = ({
     >
       <div style={styles.slotInfo}>
         <span style={styles.time}>{time}</span>
+        {/* ✅ FIX: Logic for displaying slot status */}
         {slot.status === "booked" ? (
           <span style={styles.booked}>
             {slot.performer?.username || "Booked"}
@@ -152,7 +153,7 @@ const ScheduleItem: React.FC<{ slot: Slot; currentUser: any }> = ({
       </div>
 
       <div style={styles.actionContainer}>
-        {/* --- Logic for what to display on the right side --- */}
+        {/* ✅ FIX: Logic for displaying the correct action button or status */}
         {hasEnded && slot.status === "booked" && (
           <span style={styles.ended}>Ended</span>
         )}
