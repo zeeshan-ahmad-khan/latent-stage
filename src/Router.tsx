@@ -5,6 +5,8 @@ import ProtectedRoute from "./components/ProtectedRoute";
 import PublicRoute from "./components/PublicRoute";
 import MainLayout from "./components/MainLayout";
 import PerformanceRoomPage from "./pages/PerformanceRoomPage";
+import BookingsPage from "./pages/BookingsPage";
+import SettingsPage from "./pages/SettingsPage";
 
 // Define the router structure statically, outside of any component.
 // This is the key to preventing the infinite loop.
@@ -35,6 +37,14 @@ const router = createBrowserRouter([
             // Add the new route for the performance room
             path: "/room/:roomId",
             element: <PerformanceRoomPage />,
+          },
+          {
+            path: "/bookings", // Add the bookings route
+            element: <BookingsPage />,
+          },
+          {
+            path: "/settings", // Add the settings route
+            element: <SettingsPage />,
           },
         ],
       },

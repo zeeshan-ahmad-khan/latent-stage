@@ -23,7 +23,7 @@ const styles: { [key: string]: React.CSSProperties } = {
   contentArea: {
     flex: 1, // This makes the content area take up all remaining space
 
-    overflow: "hidden", // Prevents this container from creating scrollbars
+    overflowY: "auto", // Prevents this container from creating scrollbars
   },
 };
 

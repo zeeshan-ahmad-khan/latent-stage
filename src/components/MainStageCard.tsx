@@ -4,7 +4,6 @@ import { useScheduleStore } from "../stores/scheduleStore";
 import { useNavigate } from "react-router-dom";
 
 const MainStageCard: React.FC = () => {
-  // Read both the live and next-up performers from the store
   const { livePerformer, nextUpPerformer } = useScheduleStore();
   const navigate = useNavigate();
 
@@ -17,13 +16,31 @@ const MainStageCard: React.FC = () => {
     return username.charAt(0).toUpperCase();
   };
 
-  const formatUpcomingTime = (startTime: string) => {
-    const date = new Date(startTime);
-    return date.toLocaleTimeString("en-US", {
+  const formatUpcomingDateTime = (startTime: string) => {
+    const performanceDate = new Date(startTime);
+    const now = new Date();
+    const tomorrow = new Date();
+    tomorrow.setDate(now.getDate() + 1);
+
+    const timeString = performanceDate.toLocaleTimeString("en-US", {
       hour: "numeric",
       minute: "2-digit",
       hour12: true,
     });
+
+    if (performanceDate.toDateString() === now.toDateString()) {
+      return `AT ${timeString}`;
+    }
+
+    if (performanceDate.toDateString() === tomorrow.toDateString()) {
+      return `TOMORROW AT ${timeString}`;
+    }
+
+    const dateString = performanceDate.toLocaleDateString("en-US", {
+      month: "long",
+      day: "numeric",
+    });
+    return `ON ${dateString} AT ${timeString}`;
   };
 
   // --- RENDER LOGIC ---
@@ -66,7 +83,7 @@ const MainStageCard: React.FC = () => {
         style={{ ...styles.card, cursor: "default" }} // Not clickable
       >
         <div style={styles.statusUpcoming}>
-          COMING UP AT {formatUpcomingTime(nextUpPerformer.startTime)}
+          COMING UP {formatUpcomingDateTime(nextUpPerformer.startTime)}
         </div>
         {nextUpPerformer.performer?.profilePictureUrl ? (
           <img
