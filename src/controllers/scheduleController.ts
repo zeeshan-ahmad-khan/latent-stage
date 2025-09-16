@@ -1,10 +1,11 @@
 import { Response } from "express";
 import { ProtectedRequest } from "../middlewares/authMiddleware.js";
 import Slot, { SlotStatus } from "../models/Slot.js";
+import { getSetting } from "../services/settingsService.js";
 
-const SLOT_DURATION_MINUTES = 20;
-const CANCELLATION_WINDOW_HOURS = 1.25;
-const LAST_MINUTE_WINDOW_HOURS = 1.25;
+const SLOT_DURATION_MINUTES = getSetting("SLOT_DURATION_MINUTES", 20);
+const CANCELLATION_WINDOW_HOURS = getSetting("CANCELLATION_WINDOW_HOURS", 1.25);
+const LAST_MINUTE_WINDOW_HOURS = getSetting("LAST_MINUTE_WINDOW_HOURS", 1.25);
 
 /**
  * @desc    Get schedule, generating slots if they don't exist.

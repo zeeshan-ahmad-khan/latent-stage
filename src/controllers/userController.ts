@@ -58,17 +58,49 @@ export const updateUserProfile = async (
 };
 
 /**
- * @desc    Get all bookings for the current user
- * @route   GET /api/users/bookings
+ * @desc    Get all bookings for the current user with pagination for past bookings
+ * @route   GET /api/users/bookings?page=1
  * @access  Private
  */
 export const getUserBookings = async (req: ProtectedRequest, res: Response) => {
   try {
-    const bookings = await Slot.find({ performer: req.user._id })
-      .sort({ startTime: "desc" }) // Sort by most recent first
+    const page = parseInt(req.query.page as string) || 1;
+    const limit = 10; // Number of past bookings per page
+    const skip = (page - 1) * limit;
+    const now = new Date();
+
+    // 1. Fetch all upcoming bookings (usually not a large number)
+    const upcomingBookings = await Slot.find({
+      performer: req.user._id,
+      startTime: { $gte: now },
+    })
+      .sort({ startTime: "asc" })
       .exec();
 
-    res.status(200).json(bookings);
+    // 2. Fetch a paginated list of past bookings
+    const pastBookings = await Slot.find({
+      performer: req.user._id,
+      startTime: { $lt: now },
+    })
+      .sort({ startTime: "desc" })
+      .limit(limit)
+      .skip(skip)
+      .exec();
+
+    // 3. Get the total count of past bookings for the frontend
+    const totalPastBookings = await Slot.countDocuments({
+      performer: req.user._id,
+      startTime: { $lt: now },
+    });
+
+    res.status(200).json({
+      upcomingBookings,
+      pastBookings: {
+        bookings: pastBookings,
+        totalPages: Math.ceil(totalPastBookings / limit),
+        currentPage: page,
+      },
+    });
   } catch (error) {
     console.error("Error fetching user bookings:", error);
     res.status(500).json({ message: "Server error while fetching bookings." });
