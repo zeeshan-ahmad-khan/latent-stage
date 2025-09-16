@@ -1,5 +1,6 @@
 import { Response } from "express";
 import User from "../models/User.js";
+import Slot from "../models/Slot.js";
 import { ProtectedRequest } from "../middlewares/authMiddleware.js";
 
 /**
@@ -53,5 +54,23 @@ export const updateUserProfile = async (
     });
   } else {
     res.status(404).json({ message: "User not found" });
+  }
+};
+
+/**
+ * @desc    Get all bookings for the current user
+ * @route   GET /api/users/bookings
+ * @access  Private
+ */
+export const getUserBookings = async (req: ProtectedRequest, res: Response) => {
+  try {
+    const bookings = await Slot.find({ performer: req.user._id })
+      .sort({ startTime: "desc" }) // Sort by most recent first
+      .exec();
+
+    res.status(200).json(bookings);
+  } catch (error) {
+    console.error("Error fetching user bookings:", error);
+    res.status(500).json({ message: "Server error while fetching bookings." });
   }
 };
