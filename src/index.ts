@@ -4,6 +4,7 @@ import dotenv from "dotenv";
 import authRoutes from "./routes/auth.js";
 import userRoutes from "./routes/user.js";
 import livekitRoutes from "./routes/livekit.js";
+import scheduleRoutes from "./routes/schedule.js";
 import mongoose from "mongoose";
 import keys from "./config/keys.js";
 
@@ -25,6 +26,7 @@ app.use(express.json());
 app.use("/api/auth", authRoutes);
 app.use("/api/users", userRoutes);
 app.use("/api/livekit", livekitRoutes);
+app.use("/api/schedule", scheduleRoutes);
 
 // Health check route
 app.get("/", (req: Request, res: Response) => {
