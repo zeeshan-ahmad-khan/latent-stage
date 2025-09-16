@@ -3,7 +3,19 @@ import AudioPanel from "./AudioPanel";
 function App() {
   const token = "mock-token-for-development";
   const userRole = "Audience"; // 'Performer' or 'Audience'
-  return <AudioPanel token={token} userRole={userRole} />;
+  const performer = {
+    _id: "mock-id",
+    username: "mock-username",
+    // Add the other performer fields we need
+    profilePictureUrl: "mock-url",
+    bio: "mock-bio",
+    socialLinks: {
+      youtube: "mock-youtube",
+      instagram: "mock-instagram",
+      facebook: "mock-facebook",
+    },
+  };
+  return <AudioPanel token={token} userRole={userRole} performer={performer} />;
 }
 
 export default App;

@@ -10,6 +10,7 @@ import {
 } from "react-icons/fa";
 import { RiUserShared2Line } from "react-icons/ri";
 import type { UserRole } from "../types";
+import { useAudioPanelProps } from "../AudioPanel";
 
 interface PerformerDisplayProps {
   userRole: UserRole;
@@ -17,8 +18,11 @@ interface PerformerDisplayProps {
 
 const PerformerDisplay: React.FC<PerformerDisplayProps> = ({ userRole }) => {
   const { isMuted, toggleMute, participants } = useRoomStore();
+  const { performer } = useAudioPanelProps();
   const audienceCount = participants.length;
   const isSpeaking = !isMuted;
+
+  const getInitials = (username = "") => username.charAt(0).toUpperCase();
 
   // --- TIMER STATE AND LOGIC ---
   const [timeLeft, setTimeLeft] = useState(15 * 60); // 15 minutes in seconds
@@ -35,22 +39,6 @@ const PerformerDisplay: React.FC<PerformerDisplayProps> = ({ userRole }) => {
     // Clean up the interval when the component unmounts
     return () => clearInterval(timerId);
   }, [timeLeft]);
-
-  // Helper function to format seconds into MM:SS format
-  const formatTime = (seconds: number) => {
-    const minutes = Math.floor(seconds / 60);
-    const remainingSeconds = seconds % 60;
-    return `${minutes}:${remainingSeconds < 10 ? "0" : ""}${remainingSeconds}`;
-  };
-
-  const isWarningTime = timeLeft <= 120; // 2 minutes = 120 seconds
-  // --- END OF TIMER LOGIC ---
-
-  const socialLinks = {
-    youtube: "https://youtube.com/user/placeholder",
-    instagram: "https://instagram.com/placeholder",
-    facebook: "https://facebook.com/placeholder",
-  };
 
   const buttonBackgroundColor = isSpeaking
     ? "rgba(239, 68, 68, 0.2)"
@@ -71,47 +59,54 @@ const PerformerDisplay: React.FC<PerformerDisplayProps> = ({ userRole }) => {
       </div>
 
       <div style={styles.socials}>
-        <a
-          href={socialLinks.youtube}
-          target="_blank"
-          rel="noopener noreferrer"
-          style={styles.socialLink}
-        >
-          <FaYoutube size={24} color="#FF0000" />
-        </a>
-        <a
-          href={socialLinks.instagram}
-          target="_blank"
-          rel="noopener noreferrer"
-          style={styles.socialLink}
-        >
-          <FaInstagram size={24} color="#E4405F" />
-        </a>
-        <a
-          href={socialLinks.facebook}
-          target="_blank"
-          rel="noopener noreferrer"
-          style={styles.socialLink}
-        >
-          <FaFacebook size={24} color="#1877F2" />
-        </a>
+        {performer.socialLinks?.youtube && (
+          <a
+            href={performer.socialLinks.youtube}
+            target="_blank"
+            rel="noopener noreferrer"
+            style={styles.socialLink}
+          >
+            <FaYoutube size={24} color="#FF0000" />
+          </a>
+        )}
+        {performer.socialLinks?.instagram && (
+          <a
+            href={performer.socialLinks.instagram}
+            target="_blank"
+            rel="noopener noreferrer"
+            style={styles.socialLink}
+          >
+            <FaInstagram size={24} color="#E4405F" />
+          </a>
+        )}
+        {performer.socialLinks?.facebook && (
+          <a
+            href={performer.socialLinks.facebook}
+            target="_blank"
+            rel="noopener noreferrer"
+            style={styles.socialLink}
+          >
+            <FaFacebook size={24} color="#1877F2" />
+          </a>
+        )}
       </div>
 
       <div style={styles.centerContent}>
-        <img
-          src="https://placehold.co/150x150/eef2ff/4f46e5?text=LS"
-          alt="Performer"
-          style={styles.avatar}
-        />
-        <h2 style={styles.username}>@LiveSinger</h2>
-        <p style={styles.talent}>Singer / Songwriter</p>
+        {performer.profilePictureUrl ? (
+          <img
+            src={performer.profilePictureUrl}
+            alt="Performer"
+            style={styles.avatar}
+          />
+        ) : (
+          <div style={styles.avatarInitials}>
+            {getInitials(performer.username)}
+          </div>
+        )}
 
-        {/* --- UPDATED TIMER ELEMENT --- */}
-        <div
-          style={{ ...styles.timer, ...(isWarningTime && styles.timerWarning) }}
-        >
-          {formatTime(timeLeft)}
-        </div>
+        <h2 style={styles.username}>{performer.username}</h2>
+        <p style={styles.talent}>{performer.bio || "Performer"}</p>
+        <div style={styles.timer}>15:00</div>
       </div>
 
       {userRole === "Performer" && (
@@ -189,6 +184,21 @@ const styles: { [key: string]: React.CSSProperties } = {
     height: "150px",
     borderRadius: "50%",
     border: "4px solid var(--accent)",
+    marginBottom: "1.5rem",
+    objectFit: "cover",
+  },
+  avatarInitials: {
+    width: "150px",
+    height: "150px",
+    borderRadius: "50%",
+    border: "4px solid var(--accent)",
+    backgroundColor: "#eef2ff",
+    display: "flex",
+    alignItems: "center",
+    justifyContent: "center",
+    fontSize: "4rem",
+    fontWeight: "600",
+    color: "var(--accent)",
     marginBottom: "1.5rem",
   },
   username: {

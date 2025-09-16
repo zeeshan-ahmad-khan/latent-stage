@@ -1,16 +1,33 @@
-import React, { useEffect, useRef } from "react";
+import React, { useEffect, useRef, createContext, useContext } from "react";
 import PerformerDisplay from "./components/PerformerDisplay";
 import EmojiBar from "./components/EmojiBar";
 import AudioTrack from "./components/AudioTrack";
 import { useRoomStore } from "./stores/roomStore";
-import type { UserRole } from "./types";
+import type { UserRole, Performer } from "./types";
 
 export interface AudioPanelProps {
   token: string;
   userRole: UserRole;
+  performer: Performer; // Add performer to the props
 }
 
-const AudioPanel: React.FC<AudioPanelProps> = ({ token, userRole }) => {
+const AudioPanelContext = createContext<AudioPanelProps | undefined>(undefined);
+
+export const useAudioPanelProps = () => {
+  const context = useContext(AudioPanelContext);
+  if (context === undefined) {
+    throw new Error(
+      "useAudioPanelProps must be used within an AudioPanelProvider"
+    );
+  }
+  return context;
+};
+
+const AudioPanel: React.FC<AudioPanelProps> = ({
+  token,
+  userRole,
+  performer,
+}) => {
   const {
     connect,
     disconnect,
@@ -32,7 +49,6 @@ const AudioPanel: React.FC<AudioPanelProps> = ({ token, userRole }) => {
         }
       });
     }
-
     return () => {
       if (hasConnected.current) {
         disconnect();
@@ -45,34 +61,31 @@ const AudioPanel: React.FC<AudioPanelProps> = ({ token, userRole }) => {
   }
 
   return (
-    <div style={{ display: "flex", flexDirection: "column", height: "100%" }}>
-      {participants.map((p) => (
-        <AudioTrack key={p.sid} participant={p} />
-      ))}
-
-      <div
-        onClick={!canPlayAudio ? resumeAudio : undefined}
-        style={{
-          position: "relative",
-          cursor: !canPlayAudio ? "pointer" : "default",
-          flex: 1,
-          display: "flex",
-        }}
-      >
-        <PerformerDisplay userRole={userRole} />
-
-        {!canPlayAudio && (
-          <div style={styles.playOverlay}>
-            <span style={styles.playIcon}>▶</span>
-            Click to Listen
-          </div>
-        )}
+    <AudioPanelContext.Provider value={{ token, userRole, performer }}>
+      <div style={{ display: "flex", flexDirection: "column", height: "100%" }}>
+        {participants.map((p) => (
+          <AudioTrack key={p.sid} participant={p} />
+        ))}
+        <div
+          onClick={!canPlayAudio ? resumeAudio : undefined}
+          style={{
+            position: "relative",
+            cursor: !canPlayAudio ? "pointer" : "default",
+            flex: 1,
+            display: "flex",
+          }}
+        >
+          <PerformerDisplay userRole={userRole} />
+          {!canPlayAudio && (
+            <div style={styles.playOverlay}>
+              <span style={styles.playIcon}>▶</span>
+              Click to Listen
+            </div>
+          )}
+        </div>
+        <EmojiBar />
       </div>
-
-      <EmojiBar />
-
-      {/* The Controls component is no longer needed here */}
-    </div>
+    </AudioPanelContext.Provider>
   );
 };
 
