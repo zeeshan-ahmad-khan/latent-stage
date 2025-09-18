@@ -1,9 +1,19 @@
-// This is the shape of the user object returned by the API after registration
+// This is the shape of the full user object returned by the API
 export interface User {
+  _id: string; // Use _id to match MongoDB
   id: string;
   username: string;
   email: string;
   role: UserRole;
+  firstName: string;
+  lastName: string;
+  profilePictureUrl?: string;
+  bio?: string;
+  socialLinks?: {
+    youtube?: string;
+    instagram?: string;
+    facebook?: string;
+  };
 }
 
 // ✅ FIX: Use a string literal type for compile-time safety.

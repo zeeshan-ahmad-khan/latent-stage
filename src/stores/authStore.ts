@@ -1,6 +1,6 @@
 import { create } from "zustand";
 import { loginUser, registerUser } from "../services/authServices";
-import { getUserProfile } from "../services/userService"; // Import the new function
+import { getUserProfile, updateUserProfile } from "../services/userService"; // Import the new function
 import type { User, LoginCredentials, RegisterData } from "../types";
 
 interface AuthState {
@@ -15,6 +15,7 @@ interface AuthState {
   register: (userData: RegisterData) => Promise<void>;
   logout: () => void;
   checkAuth: () => void;
+  updateProfile: (userData: Partial<User>) => Promise<void>;
 }
 
 export const useAuthStore = create<AuthState>((set, get) => ({
@@ -87,6 +88,19 @@ export const useAuthStore = create<AuthState>((set, get) => ({
       }
     } finally {
       set({ isAuthChecked: true });
+    }
+  },
+
+  updateProfile: async (userData) => {
+    set({ isLoading: true, error: null });
+    try {
+      const updatedUser = await updateUserProfile(userData);
+      set({ user: updatedUser, isLoading: false });
+    } catch (err: any) {
+      const errorMessage =
+        err.response?.data?.message || "Failed to update profile.";
+      set({ error: errorMessage, isLoading: false });
+      throw new Error(errorMessage);
     }
   },
 }));
