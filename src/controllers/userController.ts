@@ -29,29 +29,38 @@ export const updateUserProfile = async (
   const user = await User.findById(req.user._id);
 
   if (user) {
-    user.username = req.body.username || user.username;
+    // General fields that both user types can update
     user.firstName = req.body.firstName || user.firstName;
     user.lastName = req.body.lastName || user.lastName;
-    user.bio = req.body.bio || user.bio;
     user.profilePictureUrl =
       req.body.profilePictureUrl || user.profilePictureUrl;
 
-    if (req.body.socialLinks) {
-      user.socialLinks = { ...user.socialLinks, ...req.body.socialLinks };
+    // Performer-specific fields
+    if (user.role === "Performer") {
+      user.bio = req.body.bio ?? user.bio;
+      if (req.body.socialLinks) {
+        // FIX: Ensure user.socialLinks is an object before assigning to it
+        if (!user.socialLinks) {
+          user.socialLinks = {};
+        }
+        user.socialLinks.youtube =
+          req.body.socialLinks.youtube ?? user.socialLinks.youtube;
+        user.socialLinks.instagram =
+          req.body.socialLinks.instagram ?? user.socialLinks.instagram;
+        user.socialLinks.facebook =
+          req.body.socialLinks.facebook ?? user.socialLinks.facebook;
+      }
     }
 
     const updatedUser = await user.save();
 
-    res.json({
-      _id: updatedUser._id,
-      username: updatedUser.username,
-      email: updatedUser.email,
-      firstName: updatedUser.firstName,
-      lastName: updatedUser.lastName,
-      bio: updatedUser.bio,
-      profilePictureUrl: updatedUser.profilePictureUrl,
-      socialLinks: updatedUser.socialLinks,
-    });
+    // Return a lean object, excluding the password hash
+    const userObject = updatedUser.toObject();
+    const { passwordHash, ...userWithoutPassword } = userObject;
+
+    res.json(userWithoutPassword);
+
+    res.json(userObject);
   } else {
     res.status(404).json({ message: "User not found" });
   }
