@@ -74,7 +74,7 @@ export const getUserBookings = async (req: ProtectedRequest, res: Response) => {
       performer: req.user._id,
       startTime: { $gte: now },
     })
-      .sort({ startTime: "asc" })
+      .sort({ startTime: "desc" })
       .exec();
 
     // 2. Fetch a paginated list of past bookings

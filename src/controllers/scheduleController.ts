@@ -97,7 +97,7 @@ export const bookSlot = async (req: ProtectedRequest, res: Response) => {
     if (existingBooking) {
       return res
         .status(400)
-        .json({ message: "You already have a past performance booked." });
+        .json({ message: "You already have a performance booked." });
     }
   }
   slot.performer = performerId;
