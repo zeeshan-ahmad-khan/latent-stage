@@ -5,6 +5,7 @@ import { useAuthStore } from "../stores/authStore";
 import { UserRoles } from "../types";
 import Spinner from "./Spinner";
 import { useSettingsStore } from "../stores/settingsStore";
+import { useNavigate } from "react-router-dom";
 
 const formatDate = (date: Date) => {
   return date.toLocaleDateString("en-US", {
@@ -79,10 +80,11 @@ const ScheduleItem: React.FC<{ slot: Slot; currentUser: any }> = ({
   slot,
   currentUser,
 }) => {
-  const { bookSlot, cancelBooking } = useScheduleStore();
+  const { bookSlot, cancelBooking, livePerformer } = useScheduleStore();
+  const settings = useSettingsStore((state) => state.settings);
+  const navigate = useNavigate(); // Hook for navigation
   const [isBusy, setIsBusy] = useState(false);
   const [actionError, setActionError] = useState<string | null>(null);
-  const settings = useSettingsStore((state) => state.settings);
   const CANCELLATION_WINDOW_HOURS = settings?.CANCELLATION_WINDOW_HOURS ?? 1.25;
   const LAST_MINUTE_WINDOW_HOURS = settings?.LAST_MINUTE_WINDOW_HOURS ?? 1.25;
 
@@ -110,6 +112,10 @@ const ScheduleItem: React.FC<{ slot: Slot; currentUser: any }> = ({
     }
   };
 
+  const handleJoinRoom = () => {
+    navigate(`/room/main-stage`);
+  };
+
   const time = new Date(slot.startTime).toLocaleTimeString("en-US", {
     hour: "2-digit",
     minute: "2-digit",
@@ -117,6 +123,7 @@ const ScheduleItem: React.FC<{ slot: Slot; currentUser: any }> = ({
 
   const isPerformer = currentUser?.role === UserRoles.Performer;
   const isMyBooking = slot.performer?._id === currentUser?._id;
+  const isLive = livePerformer?._id === slot._id;
 
   const now = new Date();
   const slotStartTime = new Date(slot.startTime);
@@ -154,30 +161,39 @@ const ScheduleItem: React.FC<{ slot: Slot; currentUser: any }> = ({
       </div>
 
       <div style={styles.actionContainer}>
-        {/* ✅ FIX: Logic for displaying the correct action button or status */}
-        {hasEnded && slot.status === "booked" && (
-          <span style={styles.ended}>Ended</span>
-        )}
-
-        {isPerformer && !hasEnded && (
+        {/* Render LIVE button if the slot is the current live one */}
+        {isLive ? (
+          <button onClick={handleJoinRoom} style={styles.liveButton}>
+            🔴 LIVE
+          </button>
+        ) : (
           <>
-            {slot.status === "available" && (canBookToday || canBookFuture) && (
-              <button
-                onClick={handleBook}
-                style={styles.bookButton}
-                disabled={isBusy}
-              >
-                {isBusy ? <Spinner /> : "Book"}
-              </button>
+            {hasEnded && slot.status === "booked" && (
+              <span style={styles.ended}>Ended</span>
             )}
-            {isMyBooking && (
-              <button
-                onClick={handleCancel}
-                style={styles.cancelButton}
-                disabled={isBusy || !canCancel}
-              >
-                {isBusy ? <Spinner /> : "Cancel"}
-              </button>
+
+            {isPerformer && !hasEnded && (
+              <>
+                {slot.status === "available" &&
+                  (canBookToday || canBookFuture) && (
+                    <button
+                      onClick={handleBook}
+                      style={styles.bookButton}
+                      disabled={isBusy}
+                    >
+                      {isBusy ? <Spinner /> : "Book"}
+                    </button>
+                  )}
+                {isMyBooking && (
+                  <button
+                    onClick={handleCancel}
+                    style={styles.cancelButton}
+                    disabled={isBusy || !canCancel}
+                  >
+                    {isBusy ? <Spinner /> : "Cancel"}
+                  </button>
+                )}
+              </>
             )}
           </>
         )}
@@ -281,6 +297,15 @@ const styles: { [key: string]: React.CSSProperties } = {
     borderRadius: "6px",
     backgroundColor: "rgba(239, 68, 68, 0.1)",
     color: "#ef4444",
+    fontWeight: 600,
+    cursor: "pointer",
+  },
+  liveButton: {
+    padding: "0.5rem 1rem",
+    border: "1px solid #ef4444",
+    borderRadius: "6px",
+    backgroundColor: "#ef4444",
+    color: "white",
     fontWeight: 600,
     cursor: "pointer",
   },
