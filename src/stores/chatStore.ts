@@ -1,7 +1,7 @@
 import { create } from "zustand";
 import { io, Socket } from "socket.io-client";
+import { jwtDecode } from "jwt-decode"; // Import jwt-decode
 
-// This should be in a .env file, but for simplicity we'll define it here for now
 const CHAT_SERVER_URL = import.meta.env.VITE_CHAT_SERVER_URL;
 
 interface Message {
@@ -10,10 +10,15 @@ interface Message {
   timestamp: string;
 }
 
+interface CurrentUser {
+  username: string;
+}
+
 interface ChatState {
   socket: Socket | null;
-  isConnected: boolean;
+  status: "connected" | "disconnected" | "connecting";
   messages: Message[];
+  currentUser: CurrentUser | null;
   initSocket: (token: string, roomName: string) => void;
   cleanup: () => void;
   sendMessage: (roomName: string, message: string) => void;
@@ -21,34 +26,38 @@ interface ChatState {
 
 export const useChatStore = create<ChatState>((set, get) => ({
   socket: null,
-  isConnected: false,
+  status: "disconnected",
   messages: [],
+  currentUser: null,
 
   initSocket: (token, roomName) => {
-    // --- FIX FOR DUPLICATE MESSAGES ---
-    // This guard prevents a new socket from being created if one already exists.
     if (get().socket) {
       return;
     }
 
+    try {
+      const decoded: { username: string } = jwtDecode(token);
+      set({ currentUser: { username: decoded.username } });
+    } catch (error) {
+      console.error("Failed to decode token:", error);
+    }
+
+    set({ status: "connecting" });
     const newSocket = io(CHAT_SERVER_URL, {
       auth: { token },
     });
 
-    // We set the socket instance in the store immediately to prevent race conditions.
     set({ socket: newSocket });
 
     newSocket.on("connect", () => {
-      set({ isConnected: true, messages: [] });
+      set({ status: "connected", messages: [] });
       newSocket.emit("join_room", roomName);
     });
 
     newSocket.on("disconnect", () => {
-      set({ isConnected: false, socket: null });
+      set({ status: "disconnected", socket: null, currentUser: null });
     });
 
-    // --- FIX FOR CHAT HISTORY ---
-    // Add a new listener for the 'chat_history' event from the backend.
     newSocket.on("chat_history", (history: Message[]) => {
       set({ messages: history });
     });
@@ -59,9 +68,8 @@ export const useChatStore = create<ChatState>((set, get) => ({
 
     newSocket.on("connect_error", (err) => {
       console.error("Connection Error:", err.message);
-      // Clean up on connection error
       newSocket.disconnect();
-      set({ isConnected: false, socket: null });
+      set({ status: "disconnected", socket: null, currentUser: null });
     });
   },
 
@@ -69,8 +77,7 @@ export const useChatStore = create<ChatState>((set, get) => ({
     const { socket } = get();
     if (socket) {
       socket.disconnect();
-      // Ensure the socket is nulled out in the state on cleanup.
-      set({ socket: null, isConnected: false });
+      set({ socket: null, status: "disconnected", currentUser: null });
     }
   },
 

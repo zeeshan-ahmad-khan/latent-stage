@@ -1,14 +1,16 @@
 import React, { useState } from "react";
 import * as Form from "@radix-ui/react-form";
 import { useChatStore } from "../stores/chatStore";
+import { IoMdSend } from "react-icons/io"; // Import a send icon
 
 interface MessageInputProps {
   roomName: string;
 }
 
 const MessageInput: React.FC<MessageInputProps> = ({ roomName }) => {
-  const { sendMessage, isConnected } = useChatStore();
+  const { sendMessage, status } = useChatStore();
   const [message, setMessage] = useState("");
+  const isConnected = status === "connected";
 
   const handleSubmit = (event: React.FormEvent) => {
     event.preventDefault();
@@ -24,7 +26,9 @@ const MessageInput: React.FC<MessageInputProps> = ({ roomName }) => {
         <Form.Control asChild>
           <input
             type="text"
-            placeholder="Type your message..."
+            placeholder={
+              isConnected ? "Type your message..." : "Connecting to chat..."
+            }
             value={message}
             onChange={(e) => setMessage(e.target.value)}
             disabled={!isConnected}
@@ -33,8 +37,11 @@ const MessageInput: React.FC<MessageInputProps> = ({ roomName }) => {
         </Form.Control>
       </Form.Field>
       <Form.Submit asChild>
-        <button style={styles.button} disabled={!isConnected}>
-          Send
+        <button
+          style={styles.button}
+          disabled={!isConnected || !message.trim()}
+        >
+          <IoMdSend size={20} />
         </button>
       </Form.Submit>
     </Form.Root>
@@ -45,19 +52,24 @@ const styles: { [key: string]: React.CSSProperties } = {
   input: {
     width: "100%",
     boxSizing: "border-box",
-    padding: "10px",
-    borderRadius: "6px",
+    padding: "12px 15px",
+    borderRadius: "22px",
     border: "1px solid var(--border-color)",
     backgroundColor: "var(--surface)",
     color: "var(--text-primary)",
   },
   button: {
-    padding: "10px 16px",
-    borderRadius: "6px",
+    padding: "10px",
+    width: "44px",
+    height: "44px",
+    borderRadius: "50%",
     border: "none",
     backgroundColor: "var(--accent)",
     color: "white",
     cursor: "pointer",
+    display: "flex",
+    alignItems: "center",
+    justifyContent: "center",
   },
 };
 
