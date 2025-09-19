@@ -127,8 +127,9 @@ const ScheduleItem: React.FC<{ slot: Slot; currentUser: any }> = ({
 
   const now = new Date();
   const slotStartTime = new Date(slot.startTime);
-  const slotEndTime = new Date(slotStartTime.getTime() + 15 * 60 * 1000);
-  const hasEnded = slotEndTime < now;
+  const isPast = slotStartTime < now;
+  const hasEnded =
+    new Date(slot.startTime).getTime() + 15 * 60 * 1000 < now.getTime();
 
   const timeToSlotHours =
     (slotStartTime.getTime() - now.getTime()) / (1000 * 60 * 60);
@@ -154,8 +155,8 @@ const ScheduleItem: React.FC<{ slot: Slot; currentUser: any }> = ({
             {slot.performer?.username || "Booked"}
           </span>
         ) : (
-          <span style={hasEnded ? styles.unavailable : styles.available}>
-            {hasEnded ? "[ Unavailable ]" : "[ Available ]"}
+          <span style={isPast ? styles.unavailable : styles.available}>
+            {isPast ? "[ Unavailable ]" : "[ Available ]"}
           </span>
         )}
       </div>
@@ -175,6 +176,7 @@ const ScheduleItem: React.FC<{ slot: Slot; currentUser: any }> = ({
             {isPerformer && !hasEnded && (
               <>
                 {slot.status === "available" &&
+                  slotStartTime > now &&
                   (canBookToday || canBookFuture) && (
                     <button
                       onClick={handleBook}
