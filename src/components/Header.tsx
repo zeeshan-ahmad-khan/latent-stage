@@ -3,6 +3,7 @@ import { Link } from "react-router-dom";
 import { useAuthStore } from "../stores/authStore";
 import { FaCalendarAlt, FaCog } from "react-icons/fa";
 import * as Tooltip from "@radix-ui/react-tooltip";
+import { UserRoles } from "../types";
 
 const Header: React.FC = () => {
   const { logout, user } = useAuthStore();
@@ -15,21 +16,23 @@ const Header: React.FC = () => {
       <div style={styles.userInfo}>
         {user && <span>Welcome, {user.username}</span>}
 
-        <Tooltip.Provider>
-          <Tooltip.Root>
-            <Tooltip.Trigger asChild>
-              <Link to="/bookings" style={styles.iconButton}>
-                <FaCalendarAlt size={20} />
-              </Link>
-            </Tooltip.Trigger>
-            <Tooltip.Portal>
-              <Tooltip.Content style={styles.tooltipContent} sideOffset={5}>
-                My Bookings
-                <Tooltip.Arrow style={styles.tooltipArrow} />
-              </Tooltip.Content>
-            </Tooltip.Portal>
-          </Tooltip.Root>
-        </Tooltip.Provider>
+        {user?.role === UserRoles.Performer && (
+          <Tooltip.Provider>
+            <Tooltip.Root>
+              <Tooltip.Trigger asChild>
+                <Link to="/bookings" style={styles.iconButton}>
+                  <FaCalendarAlt size={20} />
+                </Link>
+              </Tooltip.Trigger>
+              <Tooltip.Portal>
+                <Tooltip.Content style={styles.tooltipContent} sideOffset={5}>
+                  My Bookings
+                  <Tooltip.Arrow style={styles.tooltipArrow} />
+                </Tooltip.Content>
+              </Tooltip.Portal>
+            </Tooltip.Root>
+          </Tooltip.Provider>
+        )}
 
         <Tooltip.Provider>
           <Tooltip.Root>
