@@ -6,6 +6,7 @@ import { UserRoles } from "../types";
 import Spinner from "./Spinner";
 import { useSettingsStore } from "../stores/settingsStore";
 import { useNavigate } from "react-router-dom";
+import * as Tooltip from "@radix-ui/react-tooltip";
 
 const formatDate = (date: Date) => {
   return date.toLocaleDateString("en-US", {
@@ -87,6 +88,8 @@ const ScheduleItem: React.FC<{ slot: Slot; currentUser: any }> = ({
   const [actionError, setActionError] = useState<string | null>(null);
   const CANCELLATION_WINDOW_HOURS = settings?.CANCELLATION_WINDOW_HOURS ?? 1.25;
   const LAST_MINUTE_WINDOW_HOURS = settings?.LAST_MINUTE_WINDOW_HOURS ?? 1.25;
+  const isUserThePerformerOnStage =
+    currentUser?._id === livePerformer?.performer?._id;
 
   const handleBook = async () => {
     setIsBusy(true);
@@ -113,7 +116,12 @@ const ScheduleItem: React.FC<{ slot: Slot; currentUser: any }> = ({
   };
 
   const handleJoinRoom = () => {
-    navigate(`/room/main-stage`);
+    if (
+      currentUser?.role !== UserRoles.Performer ||
+      isUserThePerformerOnStage
+    ) {
+      navigate(`/room/main-stage`);
+    }
   };
 
   const time = new Date(slot.startTime).toLocaleTimeString("en-US", {
@@ -130,6 +138,8 @@ const ScheduleItem: React.FC<{ slot: Slot; currentUser: any }> = ({
   const isPast = slotStartTime < now;
   const hasEnded =
     new Date(slot.startTime).getTime() + 15 * 60 * 1000 < now.getTime();
+  const shouldBlockLiveAccess =
+    isLive && isPerformer && !isUserThePerformerOnStage;
 
   const timeToSlotHours =
     (slotStartTime.getTime() - now.getTime()) / (1000 * 60 * 60);
@@ -164,9 +174,30 @@ const ScheduleItem: React.FC<{ slot: Slot; currentUser: any }> = ({
       <div style={styles.actionContainer}>
         {/* Render LIVE button if the slot is the current live one */}
         {isLive ? (
-          <button onClick={handleJoinRoom} style={styles.liveButton}>
-            🔴 LIVE
-          </button>
+          <Tooltip.Provider>
+            <Tooltip.Root>
+              <Tooltip.Trigger asChild>
+                <button
+                  onClick={handleJoinRoom}
+                  style={{
+                    ...styles.liveButton,
+                    cursor: shouldBlockLiveAccess ? "not-allowed" : "pointer",
+                  }}
+                  disabled={shouldBlockLiveAccess}
+                >
+                  🔴 LIVE
+                </button>
+              </Tooltip.Trigger>
+              {shouldBlockLiveAccess && (
+                <Tooltip.Portal>
+                  <Tooltip.Content style={styles.tooltipContent} sideOffset={5}>
+                    You must use an Audience account to watch a show.
+                    <Tooltip.Arrow style={styles.tooltipArrow} />
+                  </Tooltip.Content>
+                </Tooltip.Portal>
+              )}
+            </Tooltip.Root>
+          </Tooltip.Provider>
         ) : (
           <>
             {hasEnded && slot.status === "booked" && (
@@ -218,6 +249,28 @@ const styles: { [key: string]: React.CSSProperties } = {
     backgroundColor: "var(--surface)",
     borderRadius: "12px",
     border: "1px solid var(--border-color)",
+  },
+  liveButton: {
+    padding: "0.5rem 1rem",
+    border: "1px solid #ef4444",
+    borderRadius: "6px",
+    backgroundColor: "#ef4444",
+    color: "white",
+    fontWeight: 600,
+    cursor: "pointer",
+  },
+  tooltipContent: {
+    borderRadius: "4px",
+    padding: "10px 15px",
+    fontSize: "15px",
+    lineHeight: 1,
+    color: "var(--accent)",
+    backgroundColor: "white",
+    boxShadow:
+      "hsl(206 22% 7% / 35%) 0px 10px 38px -10px, hsl(206 22% 7% / 20%) 0px 10px 20px -15px",
+  },
+  tooltipArrow: {
+    fill: "white",
   },
   tabsHeader: {
     display: "flex",
@@ -299,15 +352,6 @@ const styles: { [key: string]: React.CSSProperties } = {
     borderRadius: "6px",
     backgroundColor: "rgba(239, 68, 68, 0.1)",
     color: "#ef4444",
-    fontWeight: 600,
-    cursor: "pointer",
-  },
-  liveButton: {
-    padding: "0.5rem 1rem",
-    border: "1px solid #ef4444",
-    borderRadius: "6px",
-    backgroundColor: "#ef4444",
-    color: "white",
     fontWeight: 600,
     cursor: "pointer",
   },

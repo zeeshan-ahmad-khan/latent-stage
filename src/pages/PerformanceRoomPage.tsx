@@ -72,10 +72,12 @@ const styles: { [key: string]: React.CSSProperties } = {
   leftPanel: {
     display: "flex",
     flexDirection: "column",
+    overflow: "hidden",
   },
   rightPanel: {
     display: "flex",
     flexDirection: "column",
+    overflow: "hidden",
   },
 };
 

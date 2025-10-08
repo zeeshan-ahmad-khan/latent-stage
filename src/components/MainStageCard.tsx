@@ -2,14 +2,22 @@ import React from "react";
 import { motion } from "framer-motion";
 import { useScheduleStore } from "../stores/scheduleStore";
 import { useNavigate } from "react-router-dom";
+import { UserRoles } from "../types";
+import { useAuthStore } from "../stores/authStore";
+import * as Tooltip from "@radix-ui/react-tooltip";
 
 const MainStageCard: React.FC = () => {
   const { livePerformer, nextUpPerformer } = useScheduleStore();
+  const user = useAuthStore((state) => state.user);
   const navigate = useNavigate();
 
   const handleJoinRoom = () => {
-    const roomName = "main-stage";
-    navigate(`/room/${roomName}`);
+    const isUserThePerformerOnStage =
+      user?._id === livePerformer?.performer?._id;
+    if (user?.role !== UserRoles.Performer || isUserThePerformerOnStage) {
+      const roomName = "main-stage";
+      navigate(`/room/${roomName}`);
+    }
   };
 
   const getInitials = (username = "") => {
@@ -47,14 +55,24 @@ const MainStageCard: React.FC = () => {
 
   // 1. LIVE NOW VIEW
   if (livePerformer) {
-    return (
+    const isUserAPerformer = user?.role === UserRoles.Performer;
+    const isUserThePerformerOnStage =
+      user?._id === livePerformer.performer?._id;
+
+    // A performer who is NOT the one on stage should be blocked.
+    const shouldBlockAccess = isUserAPerformer && !isUserThePerformerOnStage;
+
+    const liveCard = (
       <motion.div
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ duration: 0.5 }}
         onClick={handleJoinRoom}
-        whileHover={{ scale: 1.03 }}
-        style={{ ...styles.card, cursor: "pointer" }}
+        whileHover={{ scale: shouldBlockAccess ? 1 : 1.03 }}
+        style={{
+          ...styles.card,
+          cursor: shouldBlockAccess ? "not-allowed" : "pointer",
+        }}
       >
         <div style={styles.statusLive}>🔴 LIVE NOW</div>
         {livePerformer.performer?.profilePictureUrl ? (
@@ -71,6 +89,24 @@ const MainStageCard: React.FC = () => {
         <h2 style={styles.username}>{livePerformer.performer?.username}</h2>
       </motion.div>
     );
+
+    if (shouldBlockAccess) {
+      return (
+        <Tooltip.Provider>
+          <Tooltip.Root>
+            <Tooltip.Trigger asChild>{liveCard}</Tooltip.Trigger>
+            <Tooltip.Portal>
+              <Tooltip.Content style={styles.tooltipContent} sideOffset={5}>
+                You must use an Audience account to watch a show.
+                <Tooltip.Arrow style={styles.tooltipArrow} />
+              </Tooltip.Content>
+            </Tooltip.Portal>
+          </Tooltip.Root>
+        </Tooltip.Provider>
+      );
+    }
+
+    return liveCard;
   }
 
   // 2. COMING UP NEXT VIEW
@@ -127,6 +163,28 @@ const styles: { [key: string]: React.CSSProperties } = {
     backgroundColor: "var(--surface)",
     width: "100%",
     maxWidth: "500px",
+  },
+  liveButton: {
+    padding: "0.5rem 1rem",
+    border: "1px solid #ef4444",
+    borderRadius: "6px",
+    backgroundColor: "#ef4444",
+    color: "white",
+    fontWeight: 600,
+    cursor: "pointer",
+  },
+  tooltipContent: {
+    borderRadius: "4px",
+    padding: "10px 15px",
+    fontSize: "15px",
+    lineHeight: 1,
+    color: "var(--accent)",
+    backgroundColor: "white",
+    boxShadow:
+      "hsl(206 22% 7% / 35%) 0px 10px 38px -10px, hsl(206 22% 7% / 20%) 0px 10px 20px -15px",
+  },
+  tooltipArrow: {
+    fill: "white",
   },
   statusLive: {
     color: "#ef4444",

@@ -17,7 +17,7 @@ const LobbyPage: React.FC = () => {
     // This is the polling mechanism.
     const intervalId = setInterval(() => {
       fetchSchedule();
-    }, 30 * 1000); // 30 seconds
+    }, 15 * 1000); // 30 seconds
 
     // 3. Clean up the interval when the user leaves the page to prevent memory leaks.
     return () => clearInterval(intervalId);
