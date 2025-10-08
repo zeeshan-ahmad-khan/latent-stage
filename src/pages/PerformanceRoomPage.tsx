@@ -46,14 +46,14 @@ const PerformanceRoomPage: React.FC = () => {
           <AudioPanel
             token={token}
             userRole={user.role}
-            // Pass the entire performer object to the MFE
+            roomName={livePerformer._id}
             performer={livePerformer.performer}
           />
         </Suspense>
       </div>
       <div style={styles.rightPanel}>
         <Suspense fallback={<div>Loading Chat...</div>}>
-          <ChatPanel token={token} />
+          <ChatPanel token={token} roomId={livePerformer._id} />
         </Suspense>
       </div>
     </div>

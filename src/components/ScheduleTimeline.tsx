@@ -120,7 +120,7 @@ const ScheduleItem: React.FC<{ slot: Slot; currentUser: any }> = ({
       currentUser?.role !== UserRoles.Performer ||
       isUserThePerformerOnStage
     ) {
-      navigate(`/room/main-stage`);
+      navigate(`/room/${livePerformer?._id}`);
     }
   };
 

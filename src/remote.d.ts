@@ -1,5 +1,5 @@
 declare module "chatMfe/ChatPanel" {
-  const ChatPanel: React.ComponentType<{ token: string }>;
+  const ChatPanel: React.ComponentType<{ token: string; roomId: string }>;
   export default ChatPanel;
 }
 
@@ -7,6 +7,7 @@ declare module "audioMfe/AudioPanel" {
   const AudioPanel: React.ComponentType<{
     token: string;
     userRole: "Performer" | "Audience";
+    roomName: string;
     performer?: {
       _id: string;
       username: string;

@@ -15,8 +15,7 @@ const MainStageCard: React.FC = () => {
     const isUserThePerformerOnStage =
       user?._id === livePerformer?.performer?._id;
     if (user?.role !== UserRoles.Performer || isUserThePerformerOnStage) {
-      const roomName = "main-stage";
-      navigate(`/room/${roomName}`);
+      navigate(`/room/${livePerformer?._id}`);
     }
   };
 
@@ -90,9 +89,9 @@ const MainStageCard: React.FC = () => {
       </motion.div>
     );
 
-    if (shouldBlockAccess) {
-      return (
-        <Tooltip.Provider>
+    return (
+      <Tooltip.Provider>
+        {shouldBlockAccess ? (
           <Tooltip.Root>
             <Tooltip.Trigger asChild>{liveCard}</Tooltip.Trigger>
             <Tooltip.Portal>
@@ -102,11 +101,11 @@ const MainStageCard: React.FC = () => {
               </Tooltip.Content>
             </Tooltip.Portal>
           </Tooltip.Root>
-        </Tooltip.Provider>
-      );
-    }
-
-    return liveCard;
+        ) : (
+          liveCard // Render the card normally for everyone else
+        )}
+      </Tooltip.Provider>
+    );
   }
 
   // 2. COMING UP NEXT VIEW

@@ -3,6 +3,7 @@ import MainStageCard from "../components/MainStageCard";
 import ScheduleTimeline from "../components/ScheduleTimeline";
 import AdPlaceholder from "../components/AdPlaceholder";
 import { useScheduleStore } from "../stores/scheduleStore";
+import * as Tooltip from "@radix-ui/react-tooltip";
 
 const LobbyPage: React.FC = () => {
   const adWidth = "22%";
@@ -24,18 +25,20 @@ const LobbyPage: React.FC = () => {
   }, [fetchSchedule]);
 
   return (
-    <div style={styles.lobbyContainer}>
-      <div style={{ width: adWidth }}>
-        <AdPlaceholder />
+    <Tooltip.Provider>
+      <div style={styles.lobbyContainer}>
+        <div style={{ width: adWidth }}>
+          <AdPlaceholder />
+        </div>
+        <div style={styles.centerColumn}>
+          <MainStageCard />
+          <ScheduleTimeline />
+        </div>
+        <div style={{ width: adWidth }}>
+          <AdPlaceholder />
+        </div>
       </div>
-      <div style={styles.centerColumn}>
-        <MainStageCard />
-        <ScheduleTimeline />
-      </div>
-      <div style={{ width: adWidth }}>
-        <AdPlaceholder />
-      </div>
-    </div>
+    </Tooltip.Provider>
   );
 };
 
