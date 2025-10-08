@@ -5,20 +5,23 @@ import { useChatStore } from "./stores/chatStore";
 
 export interface ChatPanelProps {
   token: string;
+  roomId: string; // ✅ Accept the unique roomId as a prop
 }
 
-const ChatPanel: React.FC<ChatPanelProps> = ({ token }) => {
-  const roomName = "main-stage";
+const ChatPanel: React.FC<ChatPanelProps> = ({ token, roomId }) => {
   const { initSocket, cleanup, status } = useChatStore();
 
   useEffect(() => {
-    if (token) {
-      initSocket(token, roomName);
+    // When the component mounts, initialize the connection with the specific roomId
+    if (token && roomId) {
+      initSocket(token, roomId);
     }
+
+    // When the component unmounts, clean up the connection
     return () => {
       cleanup();
     };
-  }, [token, roomName, initSocket, cleanup]);
+  }, [token, roomId, initSocket, cleanup]); // Dependencies for the effect
 
   const statusColors = {
     connected: "#10b981",
@@ -41,7 +44,8 @@ const ChatPanel: React.FC<ChatPanelProps> = ({ token }) => {
         </div>
       </div>
       <MessageList />
-      <MessageInput roomName={roomName} />
+      {/* ✅ Pass the dynamic roomId to the input component */}
+      <MessageInput roomName={roomId} />
     </div>
   );
 };
