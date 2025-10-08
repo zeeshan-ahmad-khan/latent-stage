@@ -9,6 +9,7 @@ export interface AudioPanelProps {
   token: string;
   userRole: UserRole;
   performer: Performer; // Add performer to the props
+  roomName: string;
 }
 
 const AudioPanelContext = createContext<AudioPanelProps | undefined>(undefined);
@@ -27,6 +28,7 @@ const AudioPanel: React.FC<AudioPanelProps> = ({
   token,
   userRole,
   performer,
+  roomName,
 }) => {
   const {
     connect,
@@ -37,7 +39,7 @@ const AudioPanel: React.FC<AudioPanelProps> = ({
     canPlayAudio,
     resumeAudio,
   } = useRoomStore();
-  const roomName = "main-stage";
+
   const hasConnected = useRef(false);
 
   useEffect(() => {
@@ -61,7 +63,9 @@ const AudioPanel: React.FC<AudioPanelProps> = ({
   }
 
   return (
-    <AudioPanelContext.Provider value={{ token, userRole, performer }}>
+    <AudioPanelContext.Provider
+      value={{ token, userRole, performer, roomName }}
+    >
       <div style={{ display: "flex", flexDirection: "column", height: "100%" }}>
         {participants.map((p) => (
           <AudioTrack key={p.sid} participant={p} />
