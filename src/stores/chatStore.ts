@@ -8,6 +8,7 @@ interface Message {
   sender: string;
   message: string;
   timestamp: string;
+  role?: "Performer" | "Audience";
 }
 
 interface CurrentUser {

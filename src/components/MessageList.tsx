@@ -1,57 +1,62 @@
 import React, { useEffect, useRef } from "react";
 import { useChatStore } from "../stores/chatStore";
 
+// A simple hashing function to get a consistent color for a username
+const colorPalette = [
+  "#FF6B6B",
+  "#4ECDC4",
+  "#45B7D1",
+  "#F7B801",
+  "#5F4B8B",
+  "#3D6E70",
+  "#E94F37",
+  "#9A031E",
+  "#3C91E6",
+  "#F487B6",
+];
+
+const getUserColor = (username: string) => {
+  let hash = 0;
+  for (let i = 0; i < username.length; i++) {
+    hash = username.charCodeAt(i) + ((hash << 5) - hash);
+  }
+  const index = Math.abs(hash % colorPalette.length);
+  return colorPalette[index];
+};
+
 const MessageList: React.FC = () => {
-  const { messages, currentUser } = useChatStore();
+  const { messages } = useChatStore();
   const messagesEndRef = useRef<HTMLDivElement | null>(null);
 
   const scrollToBottom = () => {
-    messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
+    messagesEndRef.current?.scrollIntoView({ behavior: "auto", block: "end" });
   };
 
   useEffect(() => {
     scrollToBottom();
   }, [messages]);
 
-  const formatTimestamp = (timestamp: string) => {
-    return new Date(timestamp).toLocaleTimeString([], {
-      hour: "2-digit",
-      minute: "2-digit",
-    });
-  };
-
   return (
     <div style={styles.container}>
       {messages.map((msg, index) => {
-        const isCurrentUser = msg.sender === currentUser?.username;
-        return (
-          <div
-            key={index}
-            style={{
+        const isPerformer = msg.role === "Performer";
+        // const isCurrentUser = msg.sender === currentUser?.username;
+
+        // Apply a translucent background if the message is from a performer
+        const wrapperStyle: React.CSSProperties = isPerformer
+          ? {
               ...styles.messageWrapper,
-              alignSelf: isCurrentUser ? "flex-end" : "flex-start",
-            }}
-          >
-            {!isCurrentUser && <div style={styles.sender}>{msg.sender}</div>}
-            <div
-              style={{
-                ...styles.messageBubble,
-                backgroundColor: isCurrentUser
-                  ? "var(--accent)"
-                  : "var(--surface)",
-                color: isCurrentUser ? "white" : "var(--text-primary)",
-              }}
-            >
-              {msg.message}
-            </div>
-            <div
-              style={{
-                ...styles.timestamp,
-                textAlign: isCurrentUser ? "right" : "left",
-              }}
-            >
-              {formatTimestamp(msg.timestamp)}
-            </div>
+              backgroundColor: "rgba(79, 70, 229, 0.05)",
+              borderRadius: "8px",
+            }
+          : styles.messageWrapper;
+
+        return (
+          <div key={index} style={wrapperStyle}>
+            <strong style={{ color: getUserColor(msg.sender) }}>
+              {msg.sender}:
+            </strong>
+            <span style={styles.messageContent}>{msg.message}</span>
           </div>
         );
       })}
@@ -68,28 +73,16 @@ const styles: { [key: string]: React.CSSProperties } = {
     marginBottom: "10px",
     display: "flex",
     flexDirection: "column",
+    gap: "12px", // Add gap for spacing between messages
   },
   messageWrapper: {
-    display: "flex",
-    flexDirection: "column",
-    maxWidth: "70%",
-    marginBottom: "12px",
+    textAlign: "left",
+    padding: "8px 10px",
+    lineHeight: "1.4",
   },
-  sender: {
-    fontSize: "0.8rem",
-    color: "var(--text-secondary)",
-    marginBottom: "4px",
-    marginLeft: "10px",
-  },
-  messageBubble: {
-    padding: "10px 15px",
-    borderRadius: "18px",
-  },
-  timestamp: {
-    fontSize: "0.75rem",
-    color: "var(--text-secondary)",
-    marginTop: "4px",
-    margin: "0 10px",
+  messageContent: {
+    marginLeft: "6px",
+    wordBreak: "break-word",
   },
 };
 
