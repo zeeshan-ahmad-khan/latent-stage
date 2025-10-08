@@ -45,10 +45,12 @@ io.on("connection", (socket: Socket) => {
         room: data.roomName,
         sender: augmentedSocket.user.username,
         message: data.message,
+        // ✅ ADDITION: Include the user's role in the payload.
+        role: augmentedSocket.user.role,
       };
 
       // Save the new message to the database
-      const message = new Message(payload);
+      const message = new Message({ ...payload });
       await message.save();
 
       // Broadcast the message to all clients in the room

@@ -4,6 +4,7 @@ export interface IMessage extends Document {
   room: string;
   sender: string;
   message: string;
+  role: "Performer" | "Audience";
 }
 
 const MessageSchema: Schema = new Schema(
@@ -11,6 +12,7 @@ const MessageSchema: Schema = new Schema(
     room: { type: String, required: true, index: true },
     sender: { type: String, required: true },
     message: { type: String, required: true },
+    role: { type: String, required: true },
   },
   {
     timestamps: true,
