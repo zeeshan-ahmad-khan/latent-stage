@@ -8,6 +8,9 @@ declare module "audioMfe/AudioPanel" {
     token: string;
     userRole: "Performer" | "Audience";
     roomName: string;
+    startTime: string;
+    slotDuration: number;
+    performanceDuration: number;
     performer?: {
       _id: string;
       username: string;

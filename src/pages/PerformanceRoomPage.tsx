@@ -2,6 +2,7 @@ import React, { Suspense, useEffect } from "react";
 import { useAuthStore } from "../stores/authStore";
 import { useScheduleStore } from "../stores/scheduleStore"; // Import schedule store
 import { useNavigate } from "react-router-dom";
+import { useSettingsStore } from "../stores/settingsStore";
 
 const AudioPanel = React.lazy(() => import("audioMfe/AudioPanel"));
 const ChatPanel = React.lazy(() => import("chatMfe/ChatPanel"));
@@ -11,6 +12,7 @@ const PerformanceRoomPage: React.FC = () => {
   const user = useAuthStore((state) => state.user);
   const livePerformer = useScheduleStore((state) => state.livePerformer);
   const fetchSchedule = useScheduleStore((state) => state.fetchSchedule);
+  const settings = useSettingsStore((state) => state.settings);
   const navigate = useNavigate();
 
   // If the user lands here directly (e.g., refresh), fetch the schedule
@@ -34,8 +36,7 @@ const PerformanceRoomPage: React.FC = () => {
     return <div>Authenticating...</div>;
   }
 
-  // Show a loading state while we verify the live performer
-  if (!livePerformer) {
+  if (!livePerformer || !settings) {
     return <div>Loading Stage...</div>;
   }
 
@@ -48,6 +49,9 @@ const PerformanceRoomPage: React.FC = () => {
             userRole={user.role}
             roomName={livePerformer._id}
             performer={livePerformer.performer}
+            startTime={livePerformer.startTime}
+            slotDuration={settings.SLOT_DURATION_MINUTES}
+            performanceDuration={settings.PERFORMANCE_DURATION_MINUTES}
           />
         </Suspense>
       </div>
