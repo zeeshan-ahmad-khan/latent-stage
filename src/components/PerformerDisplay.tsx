@@ -11,6 +11,7 @@ import {
 import { RiUserShared2Line } from "react-icons/ri";
 import type { UserRole } from "../types";
 import { useAudioPanelProps } from "../AudioPanel";
+import { addMinutes, differenceInSeconds } from "date-fns";
 
 interface PerformerDisplayProps {
   userRole: UserRole;
@@ -18,27 +19,44 @@ interface PerformerDisplayProps {
 
 const PerformerDisplay: React.FC<PerformerDisplayProps> = ({ userRole }) => {
   const { isMuted, toggleMute, participants } = useRoomStore();
-  const { performer } = useAudioPanelProps();
+  const { performer, startTime, performanceDuration } = useAudioPanelProps();
   const audienceCount = participants.length;
   const isSpeaking = !isMuted;
 
   const getInitials = (username = "") => username.charAt(0).toUpperCase();
 
-  // --- TIMER STATE AND LOGIC ---
-  const [timeLeft, setTimeLeft] = useState(15 * 60); // 15 minutes in seconds
+  // --- REVISED TIMER LOGIC ---
+  const [timeLeft, setTimeLeft] = useState(0);
 
   useEffect(() => {
-    // Exit if the timer reaches zero
-    if (timeLeft <= 0) return;
+    if (!startTime) return;
 
-    // Set up the interval
-    const timerId = setInterval(() => {
-      setTimeLeft((prevTime) => prevTime - 1);
-    }, 1000);
+    const performanceStartTime = new Date(startTime);
+    const performanceEndTime = addMinutes(
+      performanceStartTime,
+      performanceDuration
+    );
 
-    // Clean up the interval when the component unmounts
-    return () => clearInterval(timerId);
-  }, [timeLeft]);
+    const updateTimer = () => {
+      const now = new Date().getTime();
+      const remaining = Math.max(
+        0,
+        differenceInSeconds(performanceEndTime, now)
+      );
+      setTimeLeft(remaining);
+    };
+
+    updateTimer(); // Initial calculation
+    const timerId = setInterval(updateTimer, 1000); // Update every second
+
+    return () => clearInterval(timerId); // Cleanup on unmount
+  }, [startTime]);
+
+  const formatTime = (totalSeconds: number) => {
+    const mins = Math.floor(totalSeconds / 60);
+    const secs = totalSeconds % 60;
+    return `${String(mins).padStart(2, "0")}:${String(secs).padStart(2, "0")}`;
+  };
 
   const buttonBackgroundColor = isSpeaking
     ? "rgba(239, 68, 68, 0.2)"
@@ -59,6 +77,7 @@ const PerformerDisplay: React.FC<PerformerDisplayProps> = ({ userRole }) => {
       </div>
 
       <div style={styles.socials}>
+        <h4 style={styles.socialsHeader}>Social Links</h4>
         {performer.socialLinks?.youtube && (
           <a
             href={performer.socialLinks.youtube}
@@ -106,7 +125,7 @@ const PerformerDisplay: React.FC<PerformerDisplayProps> = ({ userRole }) => {
 
         <h2 style={styles.username}>{performer.username}</h2>
         <p style={styles.talent}>{performer.bio || "Performer"}</p>
-        <div style={styles.timer}>15:00</div>
+        <div style={styles.timer}>{formatTime(timeLeft)}</div>
       </div>
 
       {userRole === "Performer" && (
@@ -157,6 +176,13 @@ const styles: { [key: string]: React.CSSProperties } = {
     fontSize: "1.1rem",
     fontWeight: "600",
     color: "var(--text-primary)",
+  },
+  socialsHeader: {
+    fontSize: "0.8rem",
+    color: "var(--text-secondary)",
+    fontWeight: 600,
+    margin: 0,
+    textTransform: "uppercase",
   },
   socials: {
     position: "absolute",

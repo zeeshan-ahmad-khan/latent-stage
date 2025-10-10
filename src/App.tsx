@@ -4,6 +4,9 @@ function App() {
   const token = "mock-token-for-development";
   const userRole = "Audience"; // 'Performer' or 'Audience'
   const roomName = "main-stage";
+  const startTime = new Date().toISOString(); // Example start time
+  const slotDuration = 20; // Example slot duration in minutes
+  const performanceDuration = 15; // Example performance duration in minutes
   const performer = {
     _id: "mock-id",
     username: "mock-username",
@@ -22,6 +25,9 @@ function App() {
       userRole={userRole}
       performer={performer}
       roomName={roomName}
+      startTime={startTime}
+      slotDuration={slotDuration}
+      performanceDuration={performanceDuration}
     />
   );
 }

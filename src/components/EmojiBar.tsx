@@ -1,8 +1,19 @@
 import React from "react";
 import { motion } from "framer-motion";
+import { useAudioPanelProps } from "../AudioPanel"; // Import the context hook
 
 const EmojiBar: React.FC = () => {
+  // Get the trigger function from the parent context
+  const { triggerEmojiAnimation } = useAudioPanelProps();
   const emojis = ["👏", "🔥", "😂", "🎉", "❤️"];
+
+  // The click handler now also passes the mouse event
+  const handleEmojiClick = (
+    emoji: string,
+    event: React.MouseEvent<HTMLButtonElement>
+  ) => {
+    triggerEmojiAnimation(emoji, event.clientX, event.clientY);
+  };
 
   return (
     <motion.div
@@ -15,8 +26,10 @@ const EmojiBar: React.FC = () => {
         <motion.button
           key={index}
           style={styles.emojiButton}
-          whileHover={{ scale: 1.1 }}
+          whileHover={{ scale: 1.15 }}
           whileTap={{ scale: 0.9 }}
+          // Update the onClick handler
+          onClick={(e) => handleEmojiClick(emoji, e)}
         >
           {emoji}
         </motion.button>
@@ -25,7 +38,6 @@ const EmojiBar: React.FC = () => {
   );
 };
 
-// ... (Add the same styles object from the host-app version here)
 const styles: { [key: string]: React.CSSProperties } = {
   container: {
     backgroundColor: "var(--surface)",
@@ -35,6 +47,8 @@ const styles: { [key: string]: React.CSSProperties } = {
     display: "flex",
     justifyContent: "space-around",
     border: "1px solid var(--border-color)",
+    position: "relative",
+    zIndex: 1,
   },
   emojiButton: {
     all: "unset",
