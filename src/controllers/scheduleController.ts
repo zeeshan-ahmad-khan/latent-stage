@@ -58,7 +58,6 @@ export const getSchedule = async (req: ProtectedRequest, res: Response) => {
     })
       .populate({
         path: "performer",
-        select: "username profilePictureUrl",
       })
       .sort({ startTime: "asc" });
 

@@ -42,6 +42,7 @@ const seedSettings = async () => {
     { key: "SLOT_DURATION_MINUTES", value: 20 },
     { key: "CANCELLATION_WINDOW_HOURS", value: 1.25 },
     { key: "LAST_MINUTE_WINDOW_HOURS", value: 1.25 },
+    { key: "PERFORMANCE_DURATION_MINUTES", value: 15 },
   ];
 
   for (const setting of settings) {
