@@ -1,42 +1,48 @@
 import React, { Suspense, useEffect } from "react";
-import { useAuthStore } from "../stores/authStore";
-import { useScheduleStore } from "../stores/scheduleStore"; // Import schedule store
 import { useNavigate } from "react-router-dom";
+import { useAuthStore } from "../stores/authStore";
+import { useScheduleStore } from "../stores/scheduleStore";
 import { useSettingsStore } from "../stores/settingsStore";
+import { usePerformanceStore } from "../stores/performanceStore";
 
 const AudioPanel = React.lazy(() => import("audioMfe/AudioPanel"));
 const ChatPanel = React.lazy(() => import("chatMfe/ChatPanel"));
 
 const PerformanceRoomPage: React.FC = () => {
-  const token = useAuthStore((state) => state.token);
-  const user = useAuthStore((state) => state.user);
-  const livePerformer = useScheduleStore((state) => state.livePerformer);
-  const fetchSchedule = useScheduleStore((state) => state.fetchSchedule);
-  const settings = useSettingsStore((state) => state.settings);
   const navigate = useNavigate();
+  const { token, user } = useAuthStore();
+  const { livePerformer } = useScheduleStore();
+  const settings = useSettingsStore((state) => state.settings);
 
-  // If the user lands here directly (e.g., refresh), fetch the schedule
+  const {
+    performanceState,
+    timeLeft,
+    startPerformanceTimer,
+    stopPerformanceTimer,
+  } = usePerformanceStore();
+
   useEffect(() => {
-    if (!livePerformer) {
-      fetchSchedule();
+    if (livePerformer && settings) {
+      startPerformanceTimer(
+        livePerformer.startTime,
+        settings.PERFORMANCE_DURATION_MINUTES
+      );
     }
-  }, [livePerformer, fetchSchedule]);
+    return () => {
+      stopPerformanceTimer();
+    };
+  }, [livePerformer, settings, startPerformanceTimer, stopPerformanceTimer]);
 
-  // If there's no live performer after checking, redirect to lobby
   useEffect(() => {
-    const timer = setTimeout(() => {
-      if (!livePerformer) {
-        // navigate('/'); // Optional: redirect if no performer
-      }
-    }, 2000); // Give it a moment to fetch
-    return () => clearTimeout(timer);
-  }, [livePerformer, navigate]);
+    if (performanceState === "ended" && user?.role === "Performer") {
+      navigate("/");
+    }
+    if (performanceState === "grace") {
+      navigate("/");
+    }
+  }, [performanceState, user, navigate]);
 
-  if (!user || !token) {
-    return <div>Authenticating...</div>;
-  }
-
-  if (!livePerformer || !settings) {
+  if (!user || !token || !livePerformer || !settings) {
     return <div>Loading Stage...</div>;
   }
 
@@ -49,15 +55,18 @@ const PerformanceRoomPage: React.FC = () => {
             userRole={user.role}
             roomName={livePerformer._id}
             performer={livePerformer.performer}
-            startTime={livePerformer.startTime}
-            slotDuration={settings.SLOT_DURATION_MINUTES}
-            performanceDuration={settings.PERFORMANCE_DURATION_MINUTES}
+            performanceState={performanceState}
+            timeLeft={timeLeft}
           />
         </Suspense>
       </div>
       <div style={styles.rightPanel}>
         <Suspense fallback={<div>Loading Chat...</div>}>
-          <ChatPanel token={token} roomId={livePerformer._id} />
+          <ChatPanel
+            token={token}
+            roomId={livePerformer._id}
+            disabled={performanceState !== "live"}
+          />
         </Suspense>
       </div>
     </div>

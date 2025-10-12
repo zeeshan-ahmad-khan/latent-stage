@@ -1,5 +1,9 @@
 declare module "chatMfe/ChatPanel" {
-  const ChatPanel: React.ComponentType<{ token: string; roomId: string }>;
+  const ChatPanel: React.ComponentType<{
+    token: string;
+    roomId: string;
+    disabled: boolean;
+  }>;
   export default ChatPanel;
 }
 
@@ -8,9 +12,6 @@ declare module "audioMfe/AudioPanel" {
     token: string;
     userRole: "Performer" | "Audience";
     roomName: string;
-    startTime: string;
-    slotDuration: number;
-    performanceDuration: number;
     performer?: {
       _id: string;
       username: string;
@@ -23,6 +24,8 @@ declare module "audioMfe/AudioPanel" {
         facebook?: string;
       };
     };
+    performanceState: PerformanceState;
+    timeLeft: number;
   }>;
   export default AudioPanel;
 }
