@@ -26,6 +26,9 @@ export interface IUser extends Document {
   profilePictureUrl?: string;
   bio?: string;
   socialLinks?: ISocialLinks;
+  totalRating: number;
+  ratingCount: number;
+  averageRating: number;
 }
 
 const UserSchema: Schema = new Schema(
@@ -49,6 +52,9 @@ const UserSchema: Schema = new Schema(
       instagram: { type: String, default: "" },
       facebook: { type: String, default: "" },
     },
+    totalRating: { type: Number, default: 0 },
+    ratingCount: { type: Number, default: 0 },
+    averageRating: { type: Number, default: 0 },
   },
   {
     timestamps: true,

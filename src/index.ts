@@ -6,6 +6,7 @@ import userRoutes from "./routes/user.js";
 import settingsRoutes from "./routes/settings.js";
 import livekitRoutes from "./routes/livekit.js";
 import scheduleRoutes from "./routes/schedule.js";
+import ratingRoutes from "./routes/rating.js";
 import mongoose from "mongoose";
 import keys from "./config/keys.js";
 import Setting from "./models/Setting.js";
@@ -31,6 +32,7 @@ app.use("/api/users", userRoutes);
 app.use("/api/livekit", livekitRoutes);
 app.use("/api/schedule", scheduleRoutes);
 app.use("/api/settings", settingsRoutes);
+app.use("/api/ratings", ratingRoutes);
 
 // Health check route
 app.get("/", (req: Request, res: Response) => {
