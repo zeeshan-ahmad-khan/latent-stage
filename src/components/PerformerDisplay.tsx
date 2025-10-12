@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React from "react";
 import { motion } from "framer-motion";
 import { useRoomStore } from "../stores/roomStore";
 import {
@@ -11,7 +11,6 @@ import {
 import { RiUserShared2Line } from "react-icons/ri";
 import type { UserRole } from "../types";
 import { useAudioPanelProps } from "../AudioPanel";
-import { addMinutes, differenceInSeconds } from "date-fns";
 
 interface PerformerDisplayProps {
   userRole: UserRole;
@@ -19,38 +18,12 @@ interface PerformerDisplayProps {
 
 const PerformerDisplay: React.FC<PerformerDisplayProps> = ({ userRole }) => {
   const { isMuted, toggleMute, participants } = useRoomStore();
-  const { performer, startTime, performanceDuration } = useAudioPanelProps();
+  const { performer, timeLeft } = useAudioPanelProps();
   const audienceCount = participants.length;
   const isSpeaking = !isMuted;
+  const isTimeWarning = timeLeft <= 180 && timeLeft > 0;
 
   const getInitials = (username = "") => username.charAt(0).toUpperCase();
-
-  // --- REVISED TIMER LOGIC ---
-  const [timeLeft, setTimeLeft] = useState(0);
-
-  useEffect(() => {
-    if (!startTime) return;
-
-    const performanceStartTime = new Date(startTime);
-    const performanceEndTime = addMinutes(
-      performanceStartTime,
-      performanceDuration
-    );
-
-    const updateTimer = () => {
-      const now = new Date().getTime();
-      const remaining = Math.max(
-        0,
-        differenceInSeconds(performanceEndTime, now)
-      );
-      setTimeLeft(remaining);
-    };
-
-    updateTimer(); // Initial calculation
-    const timerId = setInterval(updateTimer, 1000); // Update every second
-
-    return () => clearInterval(timerId); // Cleanup on unmount
-  }, [startTime]);
 
   const formatTime = (totalSeconds: number) => {
     const mins = Math.floor(totalSeconds / 60);
@@ -125,7 +98,14 @@ const PerformerDisplay: React.FC<PerformerDisplayProps> = ({ userRole }) => {
 
         <h2 style={styles.username}>{performer.username}</h2>
         <p style={styles.talent}>{performer.bio || "Performer"}</p>
-        <div style={styles.timer}>{formatTime(timeLeft)}</div>
+        <div
+          style={{
+            ...styles.timer,
+            ...(isTimeWarning ? styles.timerWarning : {}),
+          }}
+        >
+          {timeLeft > 0 ? formatTime(timeLeft) : "Performance has ended"}
+        </div>
       </div>
 
       {userRole === "Performer" && (

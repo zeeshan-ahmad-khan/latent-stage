@@ -4,6 +4,7 @@ import React, {
   createContext,
   useContext,
   useState,
+  useCallback,
 } from "react";
 import PerformerDisplay from "./components/PerformerDisplay";
 import EmojiBar from "./components/EmojiBar";
@@ -11,7 +12,10 @@ import AudioTrack from "./components/AudioTrack";
 import { useRoomStore } from "./stores/roomStore";
 import type { UserRole, Performer } from "./types";
 import { nanoid } from "nanoid";
-import { motion, AnimatePresence, type MotionStyle } from "framer-motion";
+import { AnimatePresence, motion, type MotionStyle } from "framer-motion";
+
+// The PerformanceState type will be passed down from the host
+export type PerformanceState = "live" | "ended" | "grace";
 
 interface FloatingEmoji {
   id: string;
@@ -23,11 +27,10 @@ interface FloatingEmoji {
 export interface AudioPanelProps {
   token: string;
   userRole: UserRole;
-  performer: Performer; // Add performer to the props
+  performer: Performer;
   roomName: string;
-  startTime: string;
-  slotDuration: number;
-  performanceDuration: number;
+  performanceState: PerformanceState;
+  timeLeft: number;
 }
 
 export interface AudioPanelContextProps extends AudioPanelProps {
@@ -38,9 +41,9 @@ export interface AudioPanelContextProps extends AudioPanelProps {
   ) => void;
 }
 
-const AudioPanelContext = createContext<AudioPanelContextProps | undefined>(
-  undefined
-);
+export const AudioPanelContext = createContext<
+  AudioPanelContextProps | undefined
+>(undefined);
 
 export const useAudioPanelProps = () => {
   const context = useContext(AudioPanelContext);
@@ -53,23 +56,14 @@ export const useAudioPanelProps = () => {
 };
 
 const AudioPanel: React.FC<AudioPanelProps> = (props) => {
-  const {
-    connect,
-    disconnect,
-    startAudio,
-    participants,
-    error,
-    canPlayAudio,
-    resumeAudio,
-  } = useRoomStore();
-
-  const { token, userRole, roomName } = props;
+  const { connect, disconnect, startAudio, participants } = useRoomStore();
+  const { token, userRole, roomName, performanceState } = props;
   const hasConnected = useRef(false);
-  const panelRef = useRef<HTMLDivElement>(null); // Ref for the main panel
+  const panelRef = useRef<HTMLDivElement>(null);
   const [floatingEmojis, setFloatingEmojis] = useState<FloatingEmoji[]>([]);
 
   useEffect(() => {
-    if (token && !hasConnected.current) {
+    if (token && roomName && !hasConnected.current) {
       hasConnected.current = true;
       connect(roomName, token).then(() => {
         if (userRole === "Performer") {
@@ -77,57 +71,43 @@ const AudioPanel: React.FC<AudioPanelProps> = (props) => {
         }
       });
     }
-    return () => {
-      if (hasConnected.current) {
-        disconnect();
-      }
-    };
-  }, [token, userRole, roomName, connect, disconnect, startAudio]);
+  }, [token, userRole, roomName, connect, startAudio]);
 
-  const triggerEmojiAnimation = (
-    emoji: string,
-    clientX: number,
-    clientY: number
-  ) => {
-    if (!panelRef.current) return;
+  // Disconnect from the room when the performance is over
+  useEffect(() => {
+    if (performanceState === "ended" || performanceState === "grace") {
+      disconnect();
+    }
+  }, [performanceState, disconnect]);
 
-    const panelRect = panelRef.current.getBoundingClientRect();
-    // Calculate starting position relative to the panel
-    const x = clientX - panelRect.left;
-    const y = clientY - panelRect.top;
-
-    setFloatingEmojis((prev) => [...prev, { id: nanoid(), emoji, x, y }]);
-  };
+  const triggerEmojiAnimation = useCallback(
+    (emoji: string, clientX: number, clientY: number) => {
+      if (!panelRef.current) return;
+      const panelRect = panelRef.current.getBoundingClientRect();
+      const x = clientX - panelRect.left;
+      const y = clientY - panelRect.top;
+      setFloatingEmojis((prev) => [...prev, { id: nanoid(), emoji, x, y }]);
+    },
+    []
+  );
 
   const handleAnimationComplete = (id: string) => {
     setFloatingEmojis((prev) => prev.filter((e) => e.id !== id));
   };
 
-  if (error) {
-    return <div>Error: {error}</div>;
-  }
-
   return (
     <AudioPanelContext.Provider value={{ ...props, triggerEmojiAnimation }}>
-      <div
-        ref={panelRef}
-        style={{
-          display: "flex",
-          flexDirection: "column",
-          height: "100%",
-          position: "relative",
-        }}
-      >
+      <div ref={panelRef} style={styles.panelContainer}>
         <AnimatePresence>
           {floatingEmojis.map((item) => (
             <motion.span
               key={item.id}
-              initial={{ x: item.x - 15, y: item.y, opacity: 1, scale: 0.5 }}
+              initial={{ x: item.x - 15, y: item.y - 15, opacity: 1, scale: 1 }}
               animate={{ x: item.x - 15, y: 0, opacity: 0, scale: 2.5 }}
               exit={{ opacity: 0 }}
-              transition={{ duration: 2, ease: "easeOut" }}
+              transition={{ duration: 1.5, ease: "easeOut" }}
               onAnimationComplete={() => handleAnimationComplete(item.id)}
-              style={styles.floatingEmoji as MotionStyle}
+              style={styles.floatingEmoji}
             >
               {item.emoji}
             </motion.span>
@@ -136,57 +116,27 @@ const AudioPanel: React.FC<AudioPanelProps> = (props) => {
         {participants.map((p) => (
           <AudioTrack key={p.sid} participant={p} />
         ))}
-        <div
-          onClick={!canPlayAudio ? resumeAudio : undefined}
-          style={{
-            position: "relative",
-            cursor: !canPlayAudio ? "pointer" : "default",
-            flex: 1,
-            display: "flex",
-          }}
-        >
-          <PerformerDisplay userRole={userRole} />
-          {!canPlayAudio && (
-            <div style={styles.playOverlay}>
-              <span style={styles.playIcon}>▶</span>
-              Click to Listen
-            </div>
-          )}
-        </div>
-        <EmojiBar />
+        <PerformerDisplay userRole={userRole} />
+        <EmojiBar disabled={performanceState !== "live"} />
       </div>
     </AudioPanelContext.Provider>
   );
 };
 
 const styles = {
-  playOverlay: {
-    position: "absolute" as const,
-    top: 0,
-    left: 0,
-    right: 0,
-    bottom: 0,
-    backgroundColor: "rgba(0, 0, 0, 0.6)",
-    color: "white",
+  panelContainer: {
     display: "flex",
-    flexDirection: "column" as const,
-    alignItems: "center",
-    justifyContent: "center",
-    borderRadius: "12px",
-    fontSize: "1.2rem",
-    fontWeight: "bold",
-    zIndex: 10,
-  },
-  playIcon: {
-    fontSize: "3rem",
-    marginBottom: "0.5rem",
-  },
+    flexDirection: "column",
+    height: "100%",
+    position: "relative",
+    overflow: "hidden",
+  } as React.CSSProperties,
   floatingEmoji: {
     position: "absolute",
     fontSize: "2rem",
     pointerEvents: "none",
     zIndex: 1000,
-  },
+  } as MotionStyle,
 };
 
 export default AudioPanel;

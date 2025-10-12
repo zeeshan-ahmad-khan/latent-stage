@@ -11,3 +11,5 @@ export interface Performer {
 }
 
 export type UserRole = "Performer" | "Audience";
+
+export type PerformanceState = "live" | "ended" | "grace";
