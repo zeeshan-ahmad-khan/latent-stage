@@ -5,12 +5,14 @@ import { IoMdSend } from "react-icons/io"; // Import a send icon
 
 interface MessageInputProps {
   roomName: string;
+  disabled?: boolean;
 }
 
-const MessageInput: React.FC<MessageInputProps> = ({ roomName }) => {
+const MessageInput: React.FC<MessageInputProps> = ({ roomName, disabled }) => {
   const { sendMessage, status } = useChatStore();
   const [message, setMessage] = useState("");
   const isConnected = status === "connected";
+  const isDisabled = disabled || !isConnected;
 
   const handleSubmit = (event: React.FormEvent) => {
     event.preventDefault();
@@ -31,7 +33,7 @@ const MessageInput: React.FC<MessageInputProps> = ({ roomName }) => {
             }
             value={message}
             onChange={(e) => setMessage(e.target.value)}
-            disabled={!isConnected}
+            disabled={isDisabled}
             style={styles.input}
           />
         </Form.Control>
