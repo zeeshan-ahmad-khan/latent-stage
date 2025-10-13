@@ -11,7 +11,7 @@ const ChatPanel = React.lazy(() => import("chatMfe/ChatPanel"));
 const PerformanceRoomPage: React.FC = () => {
   const navigate = useNavigate();
   const { token, user } = useAuthStore();
-  const { livePerformer } = useScheduleStore();
+  const { livePerformer, fetchSchedule } = useScheduleStore();
   const settings = useSettingsStore((state) => state.settings);
 
   const {
@@ -21,6 +21,12 @@ const PerformanceRoomPage: React.FC = () => {
     resetPerformanceState,
     isTimerRunning,
   } = usePerformanceStore();
+
+  useEffect(() => {
+    if (!livePerformer) {
+      fetchSchedule();
+    }
+  }, [livePerformer, fetchSchedule]);
 
   useEffect(() => {
     if (livePerformer && settings) {
