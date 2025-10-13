@@ -26,6 +26,7 @@ declare module "audioMfe/AudioPanel" {
     };
     performanceState: PerformanceState;
     timeLeft: number;
+    isTimerRunning: boolean;
   }>;
   export default AudioPanel;
 }

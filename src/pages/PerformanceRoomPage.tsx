@@ -18,7 +18,8 @@ const PerformanceRoomPage: React.FC = () => {
     performanceState,
     timeLeft,
     startPerformanceTimer,
-    stopPerformanceTimer,
+    resetPerformanceState,
+    isTimerRunning,
   } = usePerformanceStore();
 
   useEffect(() => {
@@ -28,10 +29,13 @@ const PerformanceRoomPage: React.FC = () => {
         settings.PERFORMANCE_DURATION_MINUTES
       );
     }
+
+    // ✅ FIX: The cleanup function of this effect is the perfect place to reset the state.
+    // It runs when the user navigates away from this page.
     return () => {
-      stopPerformanceTimer();
+      resetPerformanceState();
     };
-  }, [livePerformer, settings, startPerformanceTimer, stopPerformanceTimer]);
+  }, [livePerformer, settings, startPerformanceTimer, resetPerformanceState]);
 
   useEffect(() => {
     if (performanceState === "ended" && user?.role === "Performer") {
@@ -57,6 +61,7 @@ const PerformanceRoomPage: React.FC = () => {
             performer={livePerformer.performer}
             performanceState={performanceState}
             timeLeft={timeLeft}
+            isTimerRunning={isTimerRunning}
           />
         </Suspense>
       </div>
