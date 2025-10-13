@@ -91,6 +91,16 @@ export const useRoomStore = create<RoomState>((set, get) => ({
   disconnect: () => {
     const room = get().room;
     if (room) {
+      if (room.localParticipant) {
+        const tracks = Array.from(
+          room.localParticipant.trackPublications.values()
+        )
+          .map((pub) => pub.track)
+          .filter((track) => track !== undefined);
+
+        tracks.forEach((track) => track?.stop());
+        room.localParticipant.unpublishTracks(tracks);
+      }
       room.removeAllListeners();
       room.disconnect();
     }
@@ -110,7 +120,10 @@ export const useRoomStore = create<RoomState>((set, get) => ({
         const micPub = room.localParticipant.getTrackPublication(
           Track.Source.Microphone
         );
-        set({ isMuted: micPub?.isMuted ?? true });
+        if (micPub) {
+          await micPub.mute();
+        }
+        set({ isMuted: true });
       } catch (error) {
         console.error("Could not get microphone permissions:", error);
         set({

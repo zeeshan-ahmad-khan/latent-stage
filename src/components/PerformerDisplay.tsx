@@ -11,6 +11,7 @@ import {
 import { RiUserShared2Line } from "react-icons/ri";
 import type { UserRole } from "../types";
 import { useAudioPanelProps } from "../AudioPanel";
+import { Track } from "livekit-client";
 
 interface PerformerDisplayProps {
   userRole: UserRole;
@@ -21,7 +22,7 @@ const PerformerDisplay: React.FC<PerformerDisplayProps> = ({ userRole }) => {
   const { performer, timeLeft, isTimerRunning, performanceState } =
     useAudioPanelProps();
   const audienceCount = participants.length;
-  const isSpeaking = !isMuted;
+
   const isTimeWarning = timeLeft <= 180 && timeLeft > 0;
 
   const getInitials = (username = "") => username.charAt(0).toUpperCase();
@@ -32,11 +33,23 @@ const PerformerDisplay: React.FC<PerformerDisplayProps> = ({ userRole }) => {
     return `${String(mins).padStart(2, "0")}:${String(secs).padStart(2, "0")}`;
   };
 
-  const buttonBackgroundColor = isSpeaking
+  // ✅ FIX: This is the new, correct logic for the audience.
+  // Find the performer in the participants list and check their audio track's muted state.
+  const performerParticipant = participants.find(
+    (p) => p.identity === performer.username
+  );
+  const performerAudioTrack = performerParticipant?.getTrackPublication(
+    Track.Source.Microphone
+  );
+  const isPerformerMutedForAudience = performerAudioTrack
+    ? performerAudioTrack.isMuted
+    : true;
+
+  const buttonBackgroundColor = !isMuted
     ? "rgba(239, 68, 68, 0.2)"
     : "transparent";
-  const buttonBorderColor = isSpeaking ? "#ef4444" : "var(--border-color)";
-  const iconColor = isSpeaking ? "#ef4444" : "var(--text-primary)";
+  const buttonBorderColor = !isMuted ? "#ef4444" : "var(--border-color)";
+  const iconColor = !isMuted ? "#ef4444" : "var(--text-primary)";
 
   return (
     <motion.div
@@ -99,6 +112,7 @@ const PerformerDisplay: React.FC<PerformerDisplayProps> = ({ userRole }) => {
 
         <h2 style={styles.username}>{performer.username}</h2>
         <p style={styles.talent}>{performer.bio || "Performer"}</p>
+
         <div
           style={{
             ...styles.timer,
@@ -111,6 +125,14 @@ const PerformerDisplay: React.FC<PerformerDisplayProps> = ({ userRole }) => {
             ? formatTime(timeLeft)
             : "Performance Ended"}
         </div>
+
+        {userRole === "Audience" && (
+          <div style={styles.micStatus}>
+            {!isPerformerMutedForAudience
+              ? "PERFORMER IS SPEAKING"
+              : "PERFORMER IS MUTED"}
+          </div>
+        )}
       </div>
 
       {userRole === "Performer" && (
@@ -124,7 +146,7 @@ const PerformerDisplay: React.FC<PerformerDisplayProps> = ({ userRole }) => {
           whileHover={{ scale: 1.05 }}
           whileTap={{ scale: 0.95 }}
         >
-          {isSpeaking ? (
+          {!isMuted ? (
             <FaMicrophone size={32} color={iconColor} />
           ) : (
             <FaMicrophoneSlash size={32} color="#6c757d" />
@@ -148,6 +170,16 @@ const styles: { [key: string]: React.CSSProperties } = {
     flex: 1,
     position: "relative",
     justifyContent: "space-between",
+  },
+  micStatus: {
+    marginTop: "1rem",
+    padding: "0.25rem 0.75rem",
+    borderRadius: "12px",
+    backgroundColor: "rgba(0, 0, 0, 0.05)",
+    color: "var(--text-secondary)",
+    fontSize: "0.8rem",
+    fontWeight: 600,
+    letterSpacing: "0.5px",
   },
   audienceCounter: {
     position: "absolute",

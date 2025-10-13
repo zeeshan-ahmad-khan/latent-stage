@@ -57,7 +57,14 @@ export const useAudioPanelProps = () => {
 };
 
 const AudioPanel: React.FC<AudioPanelProps> = (props) => {
-  const { connect, disconnect, startAudio, participants } = useRoomStore();
+  const {
+    connect,
+    disconnect,
+    startAudio,
+    participants,
+    canPlayAudio,
+    resumeAudio,
+  } = useRoomStore();
   const { token, userRole, roomName, performanceState } = props;
   const hasConnected = useRef(false);
   const panelRef = useRef<HTMLDivElement>(null);
@@ -73,6 +80,20 @@ const AudioPanel: React.FC<AudioPanelProps> = (props) => {
       });
     }
   }, [token, userRole, roomName, connect, startAudio]);
+
+  useEffect(() => {
+    const handleBeforeUnload = () => {
+      disconnect();
+    };
+
+    window.addEventListener("beforeunload", handleBeforeUnload);
+
+    // This is the cleanup function that will be called when the component unmounts.
+    return () => {
+      window.removeEventListener("beforeunload", handleBeforeUnload);
+      disconnect(); // Also call disconnect here as a fallback.
+    };
+  }, [disconnect]);
 
   // Disconnect from the room when the performance is over
   useEffect(() => {
@@ -117,7 +138,18 @@ const AudioPanel: React.FC<AudioPanelProps> = (props) => {
         {participants.map((p) => (
           <AudioTrack key={p.sid} participant={p} />
         ))}
-        <PerformerDisplay userRole={userRole} />
+        <div
+          onClick={!canPlayAudio ? resumeAudio : undefined}
+          style={styles.mainContent}
+        >
+          <PerformerDisplay userRole={userRole} />
+          {!canPlayAudio && (
+            <div style={styles.playOverlay}>
+              <span style={styles.playIcon}>▶</span>
+              Click to Listen
+            </div>
+          )}
+        </div>
         <EmojiBar disabled={performanceState !== "live"} />
       </div>
     </AudioPanelContext.Provider>
@@ -138,6 +170,34 @@ const styles = {
     pointerEvents: "none",
     zIndex: 1000,
   } as MotionStyle,
+  mainContent: {
+    position: "relative",
+    cursor: "pointer",
+    flex: 1,
+    display: "flex",
+  } as React.CSSProperties,
+  // ✅ ADDITION: Add styles for the play overlay
+  playOverlay: {
+    position: "absolute",
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: 0,
+    backgroundColor: "rgba(0, 0, 0, 0.6)",
+    color: "white",
+    display: "flex",
+    flexDirection: "column",
+    alignItems: "center",
+    justifyContent: "center",
+    borderRadius: "12px",
+    fontSize: "1.2rem",
+    fontWeight: "bold",
+    zIndex: 10,
+  } as React.CSSProperties,
+  playIcon: {
+    fontSize: "3rem",
+    marginBottom: "0.5rem",
+  } as React.CSSProperties,
 };
 
 export default AudioPanel;
