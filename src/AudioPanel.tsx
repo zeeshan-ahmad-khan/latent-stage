@@ -31,6 +31,7 @@ export interface AudioPanelProps {
   roomName: string;
   performanceState: PerformanceState;
   timeLeft: number;
+  isTimerRunning: boolean;
 }
 
 export interface AudioPanelContextProps extends AudioPanelProps {

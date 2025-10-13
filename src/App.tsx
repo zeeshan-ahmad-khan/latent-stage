@@ -18,6 +18,7 @@ function App() {
   };
   const performanceState = "live"; // Example performance state
   const timeLeft = 900; // Example time left in seconds
+  const isTimerRunning = true; // Example timer state
   return (
     <AudioPanel
       token={token}
@@ -26,6 +27,7 @@ function App() {
       roomName={roomName}
       performanceState={performanceState}
       timeLeft={timeLeft}
+      isTimerRunning={isTimerRunning}
     />
   );
 }

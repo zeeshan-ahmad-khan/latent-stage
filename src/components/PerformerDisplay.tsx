@@ -18,7 +18,8 @@ interface PerformerDisplayProps {
 
 const PerformerDisplay: React.FC<PerformerDisplayProps> = ({ userRole }) => {
   const { isMuted, toggleMute, participants } = useRoomStore();
-  const { performer, timeLeft } = useAudioPanelProps();
+  const { performer, timeLeft, isTimerRunning, performanceState } =
+    useAudioPanelProps();
   const audienceCount = participants.length;
   const isSpeaking = !isMuted;
   const isTimeWarning = timeLeft <= 180 && timeLeft > 0;
@@ -104,7 +105,11 @@ const PerformerDisplay: React.FC<PerformerDisplayProps> = ({ userRole }) => {
             ...(isTimeWarning ? styles.timerWarning : {}),
           }}
         >
-          {timeLeft > 0 ? formatTime(timeLeft) : "Performance has ended"}
+          {!isTimerRunning
+            ? "--:--"
+            : performanceState === "live"
+            ? formatTime(timeLeft)
+            : "Performance Ended"}
         </div>
       </div>
 
