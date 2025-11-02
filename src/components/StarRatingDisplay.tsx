@@ -12,7 +12,7 @@ const StarRatingDisplay: React.FC<StarRatingDisplayProps> = ({
   rating = 0,
   size = 20,
   color = "#f59e0b", // Yellow color
-  emptyColor = "#DEE2E6",
+  emptyColor = "#d6d6d6ff",
 }) => {
   const stars = [];
 
