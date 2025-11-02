@@ -47,6 +47,7 @@ export const getLiveKitToken = async (req: ProtectedRequest, res: Response) => {
     // ✅ FIX: Only grant publish rights if the user is the correct performer for this slot
     canPublish: isPerformerForThisSlot,
     canSubscribe: true,
+    canPublishData: true,
   });
 
   const token = await at.toJwt();
