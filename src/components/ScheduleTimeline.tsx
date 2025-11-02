@@ -7,6 +7,7 @@ import Spinner from "./Spinner";
 import { useSettingsStore } from "../stores/settingsStore";
 import { useNavigate } from "react-router-dom";
 import * as Tooltip from "@radix-ui/react-tooltip";
+import { Rating } from "react-simple-star-rating";
 
 const formatDate = (date: Date) => {
   return date.toLocaleDateString("en-US", {
@@ -159,11 +160,25 @@ const ScheduleItem: React.FC<{ slot: Slot; currentUser: any }> = ({
     >
       <div style={styles.slotInfo}>
         <span style={styles.time}>{time}</span>
-        {/* ✅ FIX: Logic for displaying slot status */}
         {slot.status === "booked" ? (
-          <span style={styles.booked}>
-            {slot.performer?.username || "Booked"}
-          </span>
+          // ✅ MODIFIED BLOCK: Changed layout to vertical
+          <div style={styles.bookedContainer}>
+            <span style={styles.booked}>
+              {slot.performer?.username || "Booked"}
+            </span>
+            {(slot.performer?.ratingCount ?? 0) > 0 && (
+              <div style={styles.slotRatingContainer}>
+                <Rating
+                  initialValue={slot.performer?.averageRating}
+                  readonly
+                  allowFraction
+                  size={16} // Smaller size for the list
+                  fillColor="var(--star-yellow)" // ✅ Use CSS variable
+                  emptyColor="var(--border-color)" // ✅ Use CSS variable
+                />
+              </div>
+            )}
+          </div>
         ) : (
           <span style={isPast ? styles.unavailable : styles.available}>
             {isPast ? "[ Unavailable ]" : "[ Available ]"}
@@ -250,6 +265,25 @@ const styles: { [key: string]: React.CSSProperties } = {
     borderRadius: "12px",
     border: "1px solid var(--border-color)",
   },
+  // ✅ MODIFIED STYLES
+  bookedContainer: {
+    display: "flex",
+    flexDirection: "column", // Set direction to vertical
+    alignItems: "flex-start", // Align to the left
+    gap: "0.1rem",
+  },
+  booked: {
+    fontWeight: 600,
+    color: "var(--text-primary)",
+  },
+  slotRatingContainer: {
+    display: "flex",
+  },
+
+  slotRatingText: {
+    color: "var(--text-primary)",
+    fontWeight: "600",
+  },
   liveButton: {
     padding: "0.5rem 1rem",
     border: "1px solid #ef4444",
@@ -321,10 +355,6 @@ const styles: { [key: string]: React.CSSProperties } = {
   time: {
     fontWeight: 600,
     minWidth: "70px",
-  },
-  booked: {
-    color: "#4f46e5",
-    fontWeight: 500,
   },
   available: {
     color: "#10b981",

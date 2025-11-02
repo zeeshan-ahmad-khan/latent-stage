@@ -4,22 +4,13 @@ import {
   bookSlot,
   cancelBooking,
 } from "../services/scheduleService";
+import type { User } from "../types";
 
 export interface Slot {
   _id: string;
   startTime: string;
   status: "available" | "booked";
-  performer?: {
-    _id: string;
-    username: string;
-    profilePictureUrl?: string;
-    bio?: string;
-    socialLinks?: {
-      youtube?: string;
-      instagram?: string;
-      facebook?: string;
-    };
-  };
+  performer?: User;
 }
 
 interface ScheduleState {

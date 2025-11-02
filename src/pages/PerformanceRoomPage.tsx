@@ -1,9 +1,11 @@
-import React, { Suspense, useEffect } from "react";
+import React, { Suspense, useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { useAuthStore } from "../stores/authStore";
 import { useScheduleStore } from "../stores/scheduleStore";
 import { useSettingsStore } from "../stores/settingsStore";
 import { usePerformanceStore } from "../stores/performanceStore";
+import RatingModal from "../components/room/RatingModal"; // ✅ ADD THIS IMPORT
+import { submitRating } from "../services/ratingService"; // ✅ ADD THIS IMPORT
 
 const AudioPanel = React.lazy(() => import("audioMfe/AudioPanel"));
 const ChatPanel = React.lazy(() => import("chatMfe/ChatPanel"));
@@ -13,6 +15,8 @@ const PerformanceRoomPage: React.FC = () => {
   const { token, user } = useAuthStore();
   const { livePerformer, fetchSchedule } = useScheduleStore();
   const settings = useSettingsStore((state) => state.settings);
+  // ✅ ADD THIS STATE
+  const [showRatingModal, setShowRatingModal] = useState(false);
 
   const {
     performanceState,
@@ -43,14 +47,39 @@ const PerformanceRoomPage: React.FC = () => {
     };
   }, [livePerformer, settings, startPerformanceTimer, resetPerformanceState]);
 
+  // ✅ THIS IS THE CORRECTED LOGIC BLOCK
   useEffect(() => {
-    if (performanceState === "ended" && user?.role === "Performer") {
-      navigate("/");
+    if (performanceState === "ended") {
+      if (user?.role === "Performer") {
+        // 1. Performer is redirected immediately when their time ends.
+        navigate("/");
+      } else if (user?.role === "Audience") {
+        // 2. Audience sees the rating modal.
+        setShowRatingModal(true);
+      }
     }
+
+    // 3. Audience is redirected after the grace period ends.
     if (performanceState === "grace") {
       navigate("/");
     }
   }, [performanceState, user, navigate]);
+
+  // ✅ ADD THIS FUNCTION
+  const handleRate = async (rating: number) => {
+    if (!livePerformer) return;
+    try {
+      await submitRating(livePerformer._id, rating);
+    } catch (error) {
+      console.error("Failed to submit rating:", error);
+    }
+  };
+
+  // ✅ ADD THIS FUNCTION
+  const handleCloseModal = () => {
+    setShowRatingModal(false);
+    navigate("/"); // Redirect to lobby when modal is closed
+  };
 
   if (!user || !token || !livePerformer || !settings) {
     return <div>Loading Stage...</div>;
@@ -80,6 +109,12 @@ const PerformanceRoomPage: React.FC = () => {
           />
         </Suspense>
       </div>
+      {/* ✅ ADD THIS COMPONENT */}
+      <RatingModal
+        show={showRatingModal}
+        onRate={handleRate}
+        onClose={handleCloseModal}
+      />
     </div>
   );
 };

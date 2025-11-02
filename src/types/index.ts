@@ -14,6 +14,8 @@ export interface User {
     instagram?: string;
     facebook?: string;
   };
+  averageRating?: number;
+  ratingCount?: number;
 }
 
 // ✅ FIX: Use a string literal type for compile-time safety.

@@ -5,6 +5,7 @@ import { useNavigate } from "react-router-dom";
 import { UserRoles } from "../types";
 import { useAuthStore } from "../stores/authStore";
 import * as Tooltip from "@radix-ui/react-tooltip";
+import { Rating } from "react-simple-star-rating";
 
 const MainStageCard: React.FC = () => {
   const { livePerformer, nextUpPerformer } = useScheduleStore();
@@ -86,6 +87,24 @@ const MainStageCard: React.FC = () => {
           </div>
         )}
         <h2 style={styles.username}>{livePerformer.performer?.username}</h2>
+
+        {/* ✅ MODIFIED BLOCK: Replace FaStar with the Rating component */}
+        {livePerformer.performer &&
+          (livePerformer.performer.ratingCount ?? 0) > 0 && (
+            <div style={styles.ratingContainer}>
+              <Rating
+                initialValue={livePerformer.performer.averageRating}
+                readonly
+                allowFraction
+                size={20}
+                fillColor="var(--star-yellow)" // ✅ Use CSS variable
+                emptyColor="var(--border-color)" // ✅ Use CSS variable
+              />
+              <span style={styles.ratingCount}>
+                ({livePerformer.performer.ratingCount})
+              </span>
+            </div>
+          )}
       </motion.div>
     );
 
@@ -162,6 +181,23 @@ const styles: { [key: string]: React.CSSProperties } = {
     backgroundColor: "var(--surface)",
     width: "100%",
     maxWidth: "500px",
+  },
+  // ✅ ADD THESE STYLES
+  ratingContainer: {
+    display: "flex",
+    alignItems: "center",
+    justifyContent: "center",
+    gap: "0.5rem", // ✅ Increased gap
+    color: "var(--text-secondary)",
+  },
+  ratingCount: {
+    fontSize: "0.9rem",
+    lineHeight: "1", // ✅ Added for alignment
+  },
+  ratingText: {
+    color: "var(--text-primary)",
+    fontWeight: "600",
+    marginLeft: "0.1rem",
   },
   liveButton: {
     padding: "0.5rem 1rem",
