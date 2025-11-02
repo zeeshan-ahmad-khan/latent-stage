@@ -3,7 +3,7 @@ import { motion } from "framer-motion";
 import { useAudioPanelProps } from "../AudioPanel";
 
 const EmojiBar: React.FC<{ disabled?: boolean }> = ({ disabled }) => {
-  const { triggerEmojiAnimation } = useAudioPanelProps();
+  const { triggerEmojiAnimation, sendEmojiReaction } = useAudioPanelProps();
   const emojis = ["👏", "🔥", "😂", "🎉", "❤️"];
 
   const handleEmojiClick = (
@@ -12,6 +12,7 @@ const EmojiBar: React.FC<{ disabled?: boolean }> = ({ disabled }) => {
   ) => {
     if (disabled) return;
     triggerEmojiAnimation(emoji, event.clientX, event.clientY);
+    sendEmojiReaction(emoji, event.clientX, event.clientY);
   };
 
   return (

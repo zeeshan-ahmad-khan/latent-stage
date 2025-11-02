@@ -8,6 +8,9 @@ export interface Performer {
     instagram?: string;
     facebook?: string;
   };
+  // ✅ ADD THESE TWO LINES
+  averageRating?: number;
+  ratingCount?: number;
 }
 
 export type UserRole = "Performer" | "Audience";

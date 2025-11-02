@@ -12,6 +12,7 @@ import { RiUserShared2Line } from "react-icons/ri";
 import type { UserRole } from "../types";
 import { useAudioPanelProps } from "../AudioPanel";
 import { Track } from "livekit-client";
+import StarRatingDisplay from "./StarRatingDisplay";
 
 interface PerformerDisplayProps {
   userRole: UserRole;
@@ -111,6 +112,20 @@ const PerformerDisplay: React.FC<PerformerDisplayProps> = ({ userRole }) => {
         )}
 
         <h2 style={styles.username}>{performer.username}</h2>
+        {/* ✅ MODIFIED BLOCK: Use our new StarRatingDisplay component */}
+        {(performer.ratingCount ?? 0) > 0 && (
+          <div style={styles.ratingContainer}>
+            <StarRatingDisplay
+              rating={performer.averageRating || 0}
+              size={20}
+              color="#f59e0b"
+              emptyColor="#555"
+            />
+            <span style={styles.ratingCount}>
+              ({performer.ratingCount} ratings)
+            </span>
+          </div>
+        )}
         <p style={styles.talent}>{performer.bio || "Performer"}</p>
 
         <div
@@ -170,6 +185,24 @@ const styles: { [key: string]: React.CSSProperties } = {
     flex: 1,
     position: "relative",
     justifyContent: "space-between",
+  },
+  // ✅ ADD THESE STYLES
+  ratingContainer: {
+    display: "flex",
+    alignItems: "center",
+    justifyContent: "center",
+    gap: "0.5rem",
+    color: "var(--text-secondary)",
+    marginTop: "0.25rem",
+  },
+  ratingText: {
+    color: "var(--text-primary)",
+    fontWeight: "600",
+    marginLeft: "0.1rem",
+  },
+  ratingCount: {
+    fontSize: "0.9rem",
+    lineHeight: 1,
   },
   micStatus: {
     marginTop: "1rem",

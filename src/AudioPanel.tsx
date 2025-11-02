@@ -22,6 +22,7 @@ interface FloatingEmoji {
   emoji: string;
   x: number;
   y: number;
+  senderUsername?: string;
 }
 
 export interface AudioPanelProps {
@@ -37,9 +38,10 @@ export interface AudioPanelProps {
 export interface AudioPanelContextProps extends AudioPanelProps {
   triggerEmojiAnimation: (
     emoji: string,
-    clientX: number,
-    clientY: number
+    startX: number,
+    startY: number
   ) => void;
+  sendEmojiReaction: (emoji: string, x: number, y: number) => void;
 }
 
 export const AudioPanelContext = createContext<
@@ -64,22 +66,44 @@ const AudioPanel: React.FC<AudioPanelProps> = (props) => {
     participants,
     canPlayAudio,
     resumeAudio,
+    sendEmojiReaction,
   } = useRoomStore();
   const { token, userRole, roomName, performanceState } = props;
   const hasConnected = useRef(false);
   const panelRef = useRef<HTMLDivElement>(null);
   const [floatingEmojis, setFloatingEmojis] = useState<FloatingEmoji[]>([]);
 
+  const triggerAnimation = useCallback(
+    (
+      emoji: string,
+      clientX: number,
+      clientY: number,
+      senderUsername?: string
+    ) => {
+      if (!panelRef.current) return;
+      const panelRect = panelRef.current.getBoundingClientRect();
+      const x = clientX - panelRect.left;
+      const y = clientY - panelRect.top;
+      setFloatingEmojis((prev) => [
+        ...prev,
+        { id: nanoid(), emoji, x, y, senderUsername },
+      ]);
+    },
+    []
+  );
+
   useEffect(() => {
     if (token && roomName && !hasConnected.current) {
       hasConnected.current = true;
-      connect(roomName, token).then(() => {
+      connect(roomName, token, (emoji, sender, x, y) =>
+        triggerAnimation(emoji, x, y, sender)
+      ).then(() => {
         if (userRole === "Performer") {
           startAudio();
         }
       });
     }
-  }, [token, userRole, roomName, connect, startAudio]);
+  }, [token, userRole, roomName, connect, startAudio, triggerAnimation]);
 
   useEffect(() => {
     const handleBeforeUnload = () => {
@@ -102,23 +126,18 @@ const AudioPanel: React.FC<AudioPanelProps> = (props) => {
     }
   }, [performanceState, disconnect]);
 
-  const triggerEmojiAnimation = useCallback(
-    (emoji: string, clientX: number, clientY: number) => {
-      if (!panelRef.current) return;
-      const panelRect = panelRef.current.getBoundingClientRect();
-      const x = clientX - panelRect.left;
-      const y = clientY - panelRect.top;
-      setFloatingEmojis((prev) => [...prev, { id: nanoid(), emoji, x, y }]);
-    },
-    []
-  );
-
   const handleAnimationComplete = (id: string) => {
     setFloatingEmojis((prev) => prev.filter((e) => e.id !== id));
   };
 
   return (
-    <AudioPanelContext.Provider value={{ ...props, triggerEmojiAnimation }}>
+    <AudioPanelContext.Provider
+      value={{
+        ...props,
+        triggerEmojiAnimation: triggerAnimation,
+        sendEmojiReaction,
+      }}
+    >
       <div ref={panelRef} style={styles.panelContainer}>
         <AnimatePresence>
           {floatingEmojis.map((item) => (
@@ -129,9 +148,13 @@ const AudioPanel: React.FC<AudioPanelProps> = (props) => {
               exit={{ opacity: 0 }}
               transition={{ duration: 1.5, ease: "easeOut" }}
               onAnimationComplete={() => handleAnimationComplete(item.id)}
-              style={styles.floatingEmoji}
+              style={styles.floatingEmojiWrapper}
             >
-              {item.emoji}
+              <span style={styles.floatingEmojiItself}>{item.emoji}</span>
+              {/* ✅ ADDITION: Conditionally render username */}
+              {item.senderUsername && (
+                <span style={styles.senderUsername}>{item.senderUsername}</span>
+              )}
             </motion.span>
           ))}
         </AnimatePresence>
@@ -150,7 +173,9 @@ const AudioPanel: React.FC<AudioPanelProps> = (props) => {
             </div>
           )}
         </div>
-        <EmojiBar disabled={performanceState !== "live"} />
+        {userRole === "Audience" && (
+          <EmojiBar disabled={props.performanceState !== "live"} />
+        )}
       </div>
     </AudioPanelContext.Provider>
   );
@@ -164,12 +189,27 @@ const styles = {
     position: "relative",
     overflow: "hidden",
   } as React.CSSProperties,
-  floatingEmoji: {
+  floatingEmojiWrapper: {
     position: "absolute",
-    fontSize: "2rem",
     pointerEvents: "none",
     zIndex: 1000,
+    display: "flex",
+    flexDirection: "column",
+    alignItems: "center",
   } as MotionStyle,
+  floatingEmojiItself: {
+    fontSize: "2rem",
+  },
+  senderUsername: {
+    marginTop: "2px",
+    fontSize: "0.7rem",
+    color: "rgba(255, 255, 255, 0.7)", // Lighter text for subtlety
+    backgroundColor: "rgba(0, 0, 0, 0.3)", // Slight dark background
+    padding: "1px 4px",
+    borderRadius: "3px",
+    whiteSpace: "nowrap",
+  },
+
   mainContent: {
     position: "relative",
     cursor: "pointer",
